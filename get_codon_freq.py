@@ -58,12 +58,27 @@ def main():
         ratio_all=pd.merge(ratio_all,ratio_subdata,on="Assembly")
 
     ratio_all=ratio_all.round(2)
-
+    max=len(ratio_all.index)
+    print (max)
     for trip in ratio_all.columns:
         trip_freq=list(ratio_all.loc[:,trip])
         trip_freq=collections.Counter(trip_freq)
-        top3=trip_freq.most_common(3)
-        
+        test=0
+        percent=0
+
+        while percent<0.9:
+            test=test+1
+            top=trip_freq.most_common(test)
+            percent=0
+            for freq in top:
+                percent=percent+(freq[1]/max)
+
+
+        print (trip_freq)
+        print (percent)
+        print (test)
+        print()
+
 
 
 
