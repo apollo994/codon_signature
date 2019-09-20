@@ -14,6 +14,7 @@ import collections
 def main():
     parser = argparse.ArgumentParser(description='My nice tool.')
     parser.add_argument('--input', metavar='INPUTFILE', default="/dev/stdin", help='The input file.')
+    parser.add_argument('--id', metavar='ID',help='RefSeq tax ID',type=int)
     parser.add_argument('--output', metavar='OUTPUTFILE', default="/dev/stdout", help='The output file.')
     args = parser.parse_args()
 
@@ -42,56 +43,73 @@ def main():
     genecode["V"] = ["GTT","GTC","GTA","GTG"]
     genecode["Z"] = ["TAA","TGA","TAG"]
 
-
-    data=pd.read_csv(args.input, sep="\t")
-    data=data.set_index("Assembly")
-    # data.index.names = [None]
-    ratio_all=pd.DataFrame(index=data.index)
-
-    #table with all triplets frequencies
+    to_keep=["Species","Assembly"]
 
     for AA in genecode:
-        sub_data=data.loc[:,genecode[AA]]
-        # print(sub_data)
-        ratio_subdata=sub_data.div(sub_data.sum(axis=1), axis=0)
-        # print(ratio_subdata)
-        ratio_all=pd.merge(ratio_all,ratio_subdata,on="Assembly")
+        for trip in genecode[AA]:
+            to_keep.append(trip)
 
-    ratio_all=ratio_all.round(2)
-    max=len(ratio_all.index)
-    print (max)
-    for trip in ratio_all.columns:
-        trip_freq=list(ratio_all.loc[:,trip])
-        trip_freq=collections.Counter(trip_freq)
-        test=0
-        percent=0
-
-        while percent<0.9:
-            test=test+1
-            top=trip_freq.most_common(test)
-            percent=0
-            for freq in top:
-                percent=percent+(freq[1]/max)
+    print (to_keep)
 
 
-        print (trip_freq)
-        print (percent)
-        print (test)
-        print()
+    data=pd.read_csv(args.input, sep="\t", index_col=False, low_memory=False)
+    data=data.set_index("Taxid")
+    one_id_data=(data.loc[args.id,to_keep])
+
+    print (one_id_data)
 
 
-
-
+    # # data.index.names = [None]
+    # ratio_all=pd.DataFrame(index=data.index)
+    #
+    # #table with all triplets frequencies
+    #
+    # for AA in genecode:
+    #     sub_data=data.loc[:,genecode[AA]]
+    #     # print(sub_data)
+    #     ratio_subdata=sub_data.div(sub_data.sum(axis=1), axis=0)
+    #     # print(ratio_subdata)
+    #     ratio_all=pd.merge(ratio_all,ratio_subdata,on="Assembly")
+    #
+    # ratio_all=ratio_all.round(2)
     # print (ratio_all)
-    # print ()
-    # GCT_freq=list(ratio_all.loc[:,"GCT"])
-    # print (GCT_freq)
-    # print ()
-    # counter=collections.Counter(GCT_freq)
-    # print(counter)
-    # print(counter.values())
-    # print(counter.keys())
-    # print(counter.most_common(3))
+    #
+    # ratio_all.to_csv("ratio_all.tsv", sep="\t")
+    #
+    # # max=len(ratio_all.index)
+    # #
+    # # for trip in ratio_all.columns:
+    # #     trip_freq=list(ratio_all.loc[:,trip])
+    # #     trip_freq=collections.Counter(trip_freq)
+    # #     test=0
+    # #     percent=0
+    # #
+    # #     while percent<0.9:
+    # #         test=test+1
+    # #         top=trip_freq.most_common(test)
+    # #         percent=0
+    # #         for freq in top:
+    # #             percent=percent+(freq[1]/max)
+    #
+    #
+    #     # print (trip_freq)
+    #     # print (percent)
+    #     # print (test)
+    #     # print()
+    #
+    #
+    #
+    #
+    # # print (ratio_all)
+    # # print ()
+    # # GCT_freq=list(ratio_all.loc[:,"GCT"])
+    # # print (GCT_freq)
+    # # print ()
+    # # counter=collections.Counter(GCT_freq)
+    # # print(counter)
+    # # print(counter.values())
+    # # print(counter.keys())
+    # # print(counter.most_common(3))
 
 
 if __name__ == "__main__":
