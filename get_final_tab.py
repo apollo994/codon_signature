@@ -1,6 +1,4 @@
-#!/usr/bin/env python3
-# Fabio Zanarello, JRC-ispra, 2019
-
+#Andreas
 
 import os
 import sys
