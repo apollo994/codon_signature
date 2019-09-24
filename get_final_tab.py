@@ -1,7 +1,3 @@
-#!/usr/bin/env python3
-# Fabio Zanarello, JRC-ispra, 2019
-
-
 import os
 import sys
 import argparse
