@@ -18,7 +18,7 @@ def main():
     parser.add_argument('--output', metavar='OUTPUTFILE', default="/dev/stdout", help='The output file.')
     args = parser.parse_args()
 
-    #code to print the couple
+    #code to print the dictionary couple
 
     # codons1=["AAA","AAC","AAG","AAT","ACA","ACC","ACG","ACT","AGA","AGC","AGG",
     # "AGT","ATA","ATC","ATG","ATT","CAA","CAC","CAG","CAT","CCA","CCC","CCG","CCT",
@@ -32,11 +32,11 @@ def main():
     # for i in range(1,33):
     #     print("couple[\"C"+str(i)+"\"]=[\""+codons1[i-1]+"\",\""+codons2[i-1]+"\"]")
 
-
+    #read rge triplets freq table from step1
     data=pd.read_csv(args.input, sep="\t", index_col=False, low_memory=False)
 
+    #dictionary cointainig the complementary triplets
     couple = dict()
-
     couple["C1"]=["AAA","TTT"]
     couple["C2"]=["AAC","TTG"]
     couple["C3"]=["AAG","TTC"]
@@ -70,13 +70,33 @@ def main():
     couple["C31"]=["CTG","GAC"]
     couple["C32"]=["CTT","GAA"]
 
+    #list of the triplets used to create an empty DataFrame
     new_col=list(couple.keys())
+    data_couple=pd.DataFrame(columns=new_col)
 
     for element in couple:
-        temp_data=data.iloc[:,couple[element]]
-    #     print (couple[element])
-    # #print (temp_data)
-    #print (data.loc[:,["AAA","TTT"]])
+        #only two triplets of interest
+        temp_data=data[couple[element]]
+        #seq name of the two triplets
+        AA1=couple[element][0]
+        AA2=couple[element][1]
+        cup_values=[]
+        #cycle on each row to eaxtract triplets fres
+        for index, row in data.iterrows():
+            AA_values=[]
+            #pseudo count (1) is added to avoid division by 0
+            AA_values.append(row[AA1]+1)
+            AA_values.append(row[AA2]+1)
+            #freq values with increasing order
+            AA_values.sort()
+            #ratio of the freq (alway smaller/bigger)
+            cup_values.append(AA_values[0]/AA_values[1])
+
+        #add the values to the couple column
+        data_couple[element]=cup_values
+
+    data_couple=data_couple.round(2)
+    data_couple.to_csv(args.output, sep="\t",index=False, )
 
 
 if __name__ == "__main__":
