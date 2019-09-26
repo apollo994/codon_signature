@@ -72,7 +72,9 @@ def main():
     #table with all triplets frequencies
 
     for AA in genecode:
-        sub_data=data.loc[:,genecode[AA]]
+        sub_columns=['Assembly']
+        sub_columns.extend[genecode[AA]]
+        sub_data=data.loc[:,sub_columns]
         if args.verbose==True:
             print("Subset of codon columns for ",AA,":\n",sub_data)
         ratio_subdata=sub_data.div(sub_data.sum(axis=1), axis=0)
