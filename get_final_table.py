@@ -9,6 +9,7 @@ import numpy as np
 import collections
 import operator
 from functools import reduce
+import numpy
 
 def parse_table(inpath):
     data = pd.read_csv(inpath, sep='\t', index_col=False, low_memory=False)
@@ -65,6 +66,19 @@ def get_column_distribution(data, limit):
 def build_table(distributions, nr):
     
     for column in distributions:
+        keys = list(distributions[column].keys())
+        values = list(distributions[column].values())
+        percent = reduce(lambda x,y: x+y, values)
+        norm_values = [round(value/percent, 2) for value in values]
+        print(values)
+        print(norm_values)
+        sample = numpy.random.choice(keys, p=list(norm_values), size=nr)
+        print(column)
+        print(keys)
+        print(sample)
+        #print(distributions[column])
+        #print(distributions[column].keys())
+        #print(distributions[column].values())
         #Construct a vector of nr values drawn from the distribution of column
         None
 
@@ -85,7 +99,7 @@ def main():
     inpath = '/media/andreas/Data/jrc_codon/data/test_table.tsv'
     table = parse_table(inpath)
     distributions = get_column_distribution(table, threshold)
-    print(distributions)
+    #print(distributions)
     training_data = build_table(distributions, nr_rows)
     #print(list(table.columns)[2:])
     #for column in table.columns[2:]:
