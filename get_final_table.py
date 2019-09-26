@@ -14,30 +14,60 @@ def parse_table(inpath):
     data = pd.read_csv(inpath, sep='\t', index_col=False, low_memory=False)
     return data
 
-def get_column_distribution(data):
+def get_column_distribution(data, limit):
     distributions = {}
-    abs_freqs = {}
+    freqs = {}
     for column_name in data.columns[2:]:
         column_values = data[column_name].values
         for value in column_values:
             try:
-                abs_freqs[value] += 1
+                freqs[value] += 1
             except:
-                abs_freqs[value] = 1
-        print(list(abs_freqs.values()))
-        total = reduce(lambda x,y: x+y, abs_freqs.values())
-        print(total)
-        sorted_abs_freqs = sorted(abs_freqs.items(), key=operator.itemgetter(1), reverse=True)
-        #print(sorted_abs_freqs)
-        max_value = sorted_abs_freqs[0]
-        mv_percent = max_value[1]/total
-        print(mv_percent)
+                freqs[value] = 1
+        #print(list(abs_freqs.values()))
+        total = reduce(lambda x,y: x+y, freqs.values())
+        #print(total)
+        #Transform absolute freqs into relative freqs
+        #print(freqs)
+        freqs = {freq: freqs[freq]/total for freq in freqs}
+        #print(freqs)
+        sorted_freqs = sorted(freqs.items(), key=operator.itemgetter(1), reverse=True)
+        #rel_freqs = {values[0]: values[1]/total for values in sorted_abs_freqs}
+        #print(rel_freqs)
+        #print(sorted_freqs)
+        index = 0
+        max_value = sorted_freqs[index]
+        percentage = max_value[1]
+        #print(percentage)
         #print(max_value)
-        distributions[column_name] = sorted(abs_freqs)
-        abs_freqs.clear()
+        if percentage >= limit:
+            distributions[column_name] = {max_value[0]: max_value[1]}
+        else:
+            #print(percentage)
+            while percentage < limit:
+                try:
+                    #print('1')
+                    distributions[column_name][max_value[0]] = max_value[1]
+                    #print('2')
+                except:
+                    distributions[column_name] = {max_value[0]: max_value[1]}
+                index += 1
+                max_value = sorted_freqs[index]
+                percentage += max_value[1]
+                #print(percentage)
+            distributions[column_name][max_value[0]] = max_value[1]
+            
+            #distributions[max_value[0]] = 1.0
+        #distributions[column_name] = sorted(abs_freqs)
+        freqs.clear()
     return distributions
 
 def build_table(distributions, nr):
+    
+    for column in distributions:
+        #Construct a vector of nr values drawn from the distribution of column
+        None
+
     rows = []
     return rows
 
@@ -50,12 +80,12 @@ def main():
     parser.add_argument('--output', metavar='OUTPUTFILE', default="/dev/stdout", help='The output file.')
     args = parser.parse_args()
     '''
-    
+    threshold = 0.9
     nr_rows = 10
     inpath = '/media/andreas/Data/jrc_codon/data/test_table.tsv'
     table = parse_table(inpath)
-    distributions = get_column_distribution(table)
-    #print(distributions)
+    distributions = get_column_distribution(table, threshold)
+    print(distributions)
     training_data = build_table(distributions, nr_rows)
     #print(list(table.columns)[2:])
     #for column in table.columns[2:]:
