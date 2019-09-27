@@ -86,25 +86,30 @@ def build_table(distributions, nr):
     #print(sample_dict)
     sample_df = pd.DataFrame(sample_dict)
     print(sample_df)
-    rows = []
-    return rows
+    return sample_df
 
 def main():
 
-    '''
     parser = argparse.ArgumentParser(description='My nice tool.')
     parser.add_argument('--input', metavar='INPUTFILE', default="/dev/stdin", help='The input file.')
     #parser.add_argument('--id', metavar='ID',help='RefSeq tax ID',type=int)
     parser.add_argument('--output', metavar='OUTPUTFILE', default="/dev/stdout", help='The output file.')
     args = parser.parse_args()
-    '''
+
     threshold = 0.9
-    nr_rows = 10
-    inpath = '/media/andreas/Data/jrc_codon/data/test_table.tsv'
+    nr_rows = 10000
+    
+    inpath = args.input
+    #inpath = '/media/andreas/Data/jrc_codon/data/test_table.tsv'
+    outpath = args.output
+    #outpath = '/media/andreas/Data/jrc_codon/data/training_data.tsv'
     table = parse_table(inpath)
     distributions = get_column_distribution(table, threshold)
     #print(distributions)
     training_data = build_table(distributions, nr_rows)
+    print(training_data)
+    #Write output
+    training_data.to_csv(outpath, sep='\t', index=False)
     #print(list(table.columns)[2:])
     #for column in table.columns[2:]:
     #    print(table[column])
