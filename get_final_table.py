@@ -18,7 +18,7 @@ def parse_table(inpath):
 def get_column_distribution(data, limit):
     distributions = {}
     freqs = {}
-    for column_name in data.columns[2:]:
+    for column_name in data.columns:
         column_values = data[column_name].values
         for value in column_values:
             try:
@@ -57,7 +57,7 @@ def get_column_distribution(data, limit):
                 percentage += max_value[1]
                 #print(percentage)
             distributions[column_name][max_value[0]] = max_value[1]
-            
+
             #distributions[max_value[0]] = 1.0
         #distributions[column_name] = sorted(abs_freqs)
         freqs.clear()
@@ -65,16 +65,21 @@ def get_column_distribution(data, limit):
 
 def build_table(distributions, nr):
     sample_dict = {}
-    #Should be moved to get_column_distribution function    
+    #Should be moved to get_column_distribution function
     for column in distributions:
         keys = list(distributions[column].keys())
         values = list(distributions[column].values())
         percent = reduce(lambda x,y: x+y, values)
-        norm_values = [round(value/percent, 2) for value in values]
-        #print(values)
-        #print(norm_values)
-        sample = numpy.random.choice(keys, p=list(norm_values), size=nr)
-        sample_dict[column] = sample
+        #norm_values = [round(value/percent, 2) for value in values]
+        norm_values = [value/percent for value in values]
+        if reduce(lambda x,y: x+y, norm_values) < 1:
+            print(column)
+            print(percent)
+            print(values)
+            print(norm_values)
+            print(reduce(lambda x,y: x+y, norm_values))
+        #sample = numpy.random.choice(keys, p=list(norm_values), size=nr)
+        #sample_dict[column] = sample
         #print(column)
         #print(keys)
         #print(sample)
@@ -84,9 +89,10 @@ def build_table(distributions, nr):
         #Construct a vector of nr values drawn from the distribution of column
         None
     #print(sample_dict)
-    sample_df = pd.DataFrame(sample_dict)
-    print(sample_df)
-    return sample_df
+    #sample_df = pd.DataFrame(sample_dict)
+    #print(sample_df)
+    #return sample_df
+    return None
 
 def main():
 
@@ -98,7 +104,7 @@ def main():
 
     threshold = 0.9
     nr_rows = 10000
-    
+
     inpath = args.input
     #inpath = '/media/andreas/Data/jrc_codon/data/test_table.tsv'
     outpath = args.output
@@ -107,9 +113,9 @@ def main():
     distributions = get_column_distribution(table, threshold)
     #print(distributions)
     training_data = build_table(distributions, nr_rows)
-    print(training_data)
+    #print(training_data)
     #Write output
-    training_data.to_csv(outpath, sep='\t', index=False)
+    #training_data.to_csv(outpath, sep='\t', index=False)
     #print(list(table.columns)[2:])
     #for column in table.columns[2:]:
     #    print(table[column])
