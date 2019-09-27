@@ -64,24 +64,28 @@ def get_column_distribution(data, limit):
     return distributions
 
 def build_table(distributions, nr):
-    
+    sample_dict = {}
+    #Should be moved to get_column_distribution function    
     for column in distributions:
         keys = list(distributions[column].keys())
         values = list(distributions[column].values())
         percent = reduce(lambda x,y: x+y, values)
         norm_values = [round(value/percent, 2) for value in values]
-        print(values)
-        print(norm_values)
+        #print(values)
+        #print(norm_values)
         sample = numpy.random.choice(keys, p=list(norm_values), size=nr)
-        print(column)
-        print(keys)
-        print(sample)
+        sample_dict[column] = sample
+        #print(column)
+        #print(keys)
+        #print(sample)
         #print(distributions[column])
         #print(distributions[column].keys())
         #print(distributions[column].values())
         #Construct a vector of nr values drawn from the distribution of column
         None
-
+    #print(sample_dict)
+    sample_df = pd.DataFrame(sample_dict)
+    print(sample_df)
     rows = []
     return rows
 
@@ -105,14 +109,6 @@ def main():
     #for column in table.columns[2:]:
     #    print(table[column])
     #print(table.columns[2:])
-    
-    
-    
-    
-    
-
-
-    #generate 10k lines for AI
 
 if __name__ == "__main__":
     main()
