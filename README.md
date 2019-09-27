@@ -4,7 +4,7 @@ Microorganism identification could be missleading or slow with traditional metho
 
 This repository contains the scratch of a pipeline for alterntive classification using codon usage.
 
-Here you will find the instraction to generate codon usage signature tables, starting from codon abbundance in CDS, to train a ML model.
+Here you will find a pipeline to generate codon usage signature tables to train a ML model, starting from codon abbundance in CDS.
 
 
 ## How to run the pipelines
