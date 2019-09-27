@@ -60,14 +60,16 @@ def main():
 
     data=pd.read_csv(args.input, sep="\t", index_col=False, low_memory=False)
     data=data.set_index("Taxid")
+
     # Create a new dataframe RefSeq tax ID,Species,Assembly and all the codons from genecode dictionary as columns
     # that is has only the rows where RefSeq is equal to the input Tax Id
-    one_id_data=(data.loc[args.id,to_keep])
+    data=(data.loc[args.id,to_keep])
     if verbose==True:
-        print("DataFrame columns\n",one_id_data,"\n Done")
+        print("DataFrame columns\n",data,"\n Done")
     # data.index.names = [None]
     ratio_all=pd.DataFrame(data["Assembly"],index=data.index)
-    print(ratio_all)
+    if verbose==True:
+        print("Ration all empy table\n",ratio_all)
     #table with all triplets frequencies
     for AA in genecode:
         sub_columns=[]#"Assembly"
@@ -82,7 +84,7 @@ def main():
         ratio_subdata=sub_data.div(sub_data.sum(axis=1), axis=0)
         if verbose==True:
             print("Relative frequency of codon usage for",AA,":\n", ratio_subdata,"\n Done")
-        ratio_all=pd.concat([ratio_all,ratio_subdata])
+        ratio_all=pd.concat([ratio_all,ratio_subdata], axis=1)
     #to do explicitely declares which columns has to be rounded
     ratio_all=ratio_all.round(2)
     filename=str(args.output)+".tsv"
