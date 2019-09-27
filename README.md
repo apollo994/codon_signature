@@ -17,10 +17,10 @@ bash codon_signature/codon_signature.sh RefSeq_table Taxon_IDs_list run_name
 ```
 
 Where `RefSeq_table` is a table cointaining the following column (tab separated):
-+ Taxid : the specific ID for the **Species** in RefSeq
-+ Species : name of the species
-+ Assembly : unique identifier of the deposited genome
-+ AAA...TTT : 64 columns reppresenting codons and their absolute abbundance in the CDS of the **Assembly**
++ **Taxid** : the specific ID for the Species in RefSeq
++ **Species** : name of the species
++ **Assembly** : unique identifier of the deposited genome
++ **AAA...TTT** : 64 columns reppresenting codons and their absolute abbundance in the CDS of the Assembly
 
 `Taxon_IDs_list` is a .txt file that cointains one **Taxid** per line and reppresent the list of species you want for generate the final codon signature table (one for each Taxid)
 
