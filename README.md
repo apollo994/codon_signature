@@ -26,4 +26,4 @@ Where `RefSeq_table` is a table cointaining the following column (tab separated)
 
 `run_name` is the name used to name the folder cointainig the outputs
 
-You will find as many file as many Taxid you askd for in the results_run_name folder
+In the `results_run_name` folder you will find as many file as many Taxid you askd for, each of them reppresenting the codon signature of each species.
