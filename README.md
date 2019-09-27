@@ -1,4 +1,4 @@
-#Codon Signature
+# Codon Signature
 
 Microorganism identification could be missleading or slow with traditional method (16S, phenotipical analysis).
 
@@ -20,7 +20,7 @@ Where `RefSeq_table` is a table cointaining the following column (tab separated)
 + Taxid : the specific ID for the **Species** in RefSeq
 + Species : name of the species
 + Assembly : unique identifier of the deposited genome
-+ AAA...TTT : 64 columns reppresenting the 64 codons and their absolute abbundance in the the CDS of the particular **Assembly**
++ AAA...TTT : 64 columns reppresenting codons and their absolute abbundance in the CDS of the **Assembly**
 
 `Taxon_IDs_list` is a .txt file that cointains one **Taxid** per line and reppresent the list of species you want for generate the final codon signature table (one for each Taxid)
 
