@@ -29,7 +29,7 @@ touch $result_folder"/"$id"_step2_res.tsv"
 echo "DONE"
 
 echo "Generating final 10k lines table..."
-#python codon_signature/get_final_tab.py --input $result_folder"/"$id"_step2_res.tsv" --output $result_folder"/"$id"_final.tsv"
+#python codon_signature/get_final_table.py --input $result_folder"/"$id"_step2_res.tsv" --output $result_folder"/"$id"_final.tsv"
 touch $result_folder"/"$id"_final.tsv"
 echo "DONE"
 
