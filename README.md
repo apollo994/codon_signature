@@ -14,15 +14,13 @@ Clone the repo cointinig the scripts and run it as follow:
 ```
 git clone https://github.com/apollo994/codon_signature.git
 bash codon_signature/codon_signature.sh RefSeq_table Taxon_IDs_list run_name
-
 ```
 
 Where `RefSeq_table` is a table cointaining the following column (tab separated):
-+ Taxid
-+ Species
-+ Assembly
-+ 64 codons (AAA...TTT)
-**Taxid** is the specific ID for the **Species** in RefSeq, **Assembly** is the unique identifier of the specific deposited genome and 64 columns reppresenting the 64 codons and they absolute abbundance in the the CDS of the particular **Assembly**.
++ Taxid : the specific ID for the **Species** in RefSeq
++ Species : name of the species
++ Assembly : unique identifier of the deposited genome
++ AAA...TTT : 64 columns reppresenting the 64 codons and their absolute abbundance in the the CDS of the particular **Assembly**
 
 `Taxon_IDs_list` is a .txt file that cointains one **Taxid** per line and reppresent the list of species you want for generate the final codon signature table (one for each Taxid)
 
