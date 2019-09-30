@@ -80,7 +80,7 @@ def build_table(distributions, nr):
         else:
             sample = numpy.random.choice(keys, p=list(norm_values), size=nr)
             sample_dict[column] = sample
-      
+
 
     sample_df = pd.DataFrame(sample_dict)
     #print(sample_df)
@@ -97,20 +97,20 @@ def main():
     threshold = 0.9
     nr_rows = 10000
 
-    
+
     inpath = args.input
 
     #inpath = '/media/andreas/Data/jrc_codon/data/test_table.tsv'
-    inpath = '/media/andreas/Data/jrc_codon/data/out_step2.tsv'
-    #outpath = args.output
-    outpath = '/media/andreas/Data/jrc_codon/data/training_data.tsv'
+    #inpath = '/media/andreas/Data/jrc_codon/data/out_step2.tsv'
+    outpath = args.output
+    #outpath = '/media/andreas/Data/jrc_codon/data/training_data.tsv'
     table = parse_table(inpath)
     distributions = get_column_distribution(table, threshold)
     #print(distributions)
     training_data = build_table(distributions, nr_rows)
     #print(training_data)
     #Write output
-    #training_data.to_csv(outpath, sep='\t', index=False)
+    training_data.to_csv(outpath, sep='\t', index=False)
     #print(list(table.columns)[2:])
     #for column in table.columns[2:]:
     #    print(table[column])

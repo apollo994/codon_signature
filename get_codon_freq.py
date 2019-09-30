@@ -87,8 +87,9 @@ def main():
         ratio_all=pd.concat([ratio_all,ratio_subdata], axis=1)
     #to do explicitely declares which columns has to be rounded
     ratio_all=ratio_all.round(2)
-    filename=str(args.output)+".tsv"
-    ratio_all.to_csv(filename, sep='\t')
+    #filename=str(args.output)+".tsv"
+    #ratio_all.to_csv(filename, sep='\t')
+    ratio_all.to_csv(args.output, sep='\t')
 
 if __name__ == "__main__":
     main()
