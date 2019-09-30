@@ -10,6 +10,7 @@ import collections
 import operator
 from functools import reduce
 import numpy
+import fractions
 
 def parse_table(inpath):
     data = pd.read_csv(inpath, sep='\t', index_col=False, low_memory=False)
@@ -71,28 +72,19 @@ def build_table(distributions, nr):
         values = list(distributions[column].values())
         percent = reduce(lambda x,y: x+y, values)
         #norm_values = [round(value/percent, 2) for value in values]
-        norm_values = [value/percent for value in values]
-        if reduce(lambda x,y: x+y, norm_values) < 1:
+
+        norm_values = [fractions.Fraction(value/percent).limit_denominator() for value in values]
+        if reduce(lambda x,y: x+y, norm_values) != 1:
             print(column)
-            print(percent)
-            print(values)
-            print(norm_values)
-            print(reduce(lambda x,y: x+y, norm_values))
-        #sample = numpy.random.choice(keys, p=list(norm_values), size=nr)
-        #sample_dict[column] = sample
-        #print(column)
-        #print(keys)
-        #print(sample)
-        #print(distributions[column])
-        #print(distributions[column].keys())
-        #print(distributions[column].values())
-        #Construct a vector of nr values drawn from the distribution of column
-        None
-    #print(sample_dict)
-    #sample_df = pd.DataFrame(sample_dict)
+            #print(norm_values)
+        else:
+            sample = numpy.random.choice(keys, p=list(norm_values), size=nr)
+            sample_dict[column] = sample
+      
+
+    sample_df = pd.DataFrame(sample_dict)
     #print(sample_df)
-    #return sample_df
-    return None
+    return sample_df
 
 def main():
 
@@ -105,10 +97,13 @@ def main():
     threshold = 0.9
     nr_rows = 10000
 
+    
     inpath = args.input
+
     #inpath = '/media/andreas/Data/jrc_codon/data/test_table.tsv'
-    outpath = args.output
-    #outpath = '/media/andreas/Data/jrc_codon/data/training_data.tsv'
+    inpath = '/media/andreas/Data/jrc_codon/data/out_step2.tsv'
+    #outpath = args.output
+    outpath = '/media/andreas/Data/jrc_codon/data/training_data.tsv'
     table = parse_table(inpath)
     distributions = get_column_distribution(table, threshold)
     #print(distributions)
