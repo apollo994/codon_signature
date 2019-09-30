@@ -18,7 +18,86 @@ def main():
     parser.add_argument('--output', metavar='OUTPUTFILE', default="/dev/stdout", help='The output file.')
     args = parser.parse_args()
 
-    get the freq table and make the couple
+    #code to print the dictionary couple
+
+    # codons1=["AAA","AAC","AAG","AAT","ACA","ACC","ACG","ACT","AGA","AGC","AGG",
+    # "AGT","ATA","ATC","ATG","ATT","CAA","CAC","CAG","CAT","CCA","CCC","CCG","CCT",
+    # "CGA","CGC","CGG","CGT","CTA","CTC","CTG","CTT"]
+    #
+    # codons2=["GAA","GAC","GAG","GAT","GCA","GCC","GCG","GCT","GGA","GGC","GGG",
+    # "GGT","GTA","GTC","GTG","GTT","TAA","TAC","TAG","TAT","TCA","TCC","TCG","TCT",
+    # "TGA","TGC","TGG","TGT","TTA","TTC","TTG","TTT"]
+    # codons2.reverse()
+    #
+    # for i in range(1,33):
+    #     print("couple[\"C"+str(i)+"\"]=[\""+codons1[i-1]+"\",\""+codons2[i-1]+"\"]")
+
+    #read rge triplets freq table from step1
+    data=pd.read_csv(args.input, sep="\t", index_col=False, low_memory=False)
+
+    #dictionary cointainig the complementary triplets
+    couple = dict()
+    couple["C1"]=["AAA","TTT"]
+    couple["C2"]=["AAC","TTG"]
+    couple["C3"]=["AAG","TTC"]
+    couple["C4"]=["AAT","TTA"]
+    couple["C5"]=["ACA","TGT"]
+    couple["C6"]=["ACC","TGG"]
+    couple["C7"]=["ACG","TGC"]
+    couple["C8"]=["ACT","TGA"]
+    couple["C9"]=["AGA","TCT"]
+    couple["C10"]=["AGC","TCG"]
+    couple["C11"]=["AGG","TCC"]
+    couple["C12"]=["AGT","TCA"]
+    couple["C13"]=["ATA","TAT"]
+    couple["C14"]=["ATC","TAG"]
+    couple["C15"]=["ATG","TAC"]
+    couple["C16"]=["ATT","TAA"]
+    couple["C17"]=["CAA","GTT"]
+    couple["C18"]=["CAC","GTG"]
+    couple["C19"]=["CAG","GTC"]
+    couple["C20"]=["CAT","GTA"]
+    couple["C21"]=["CCA","GGT"]
+    couple["C22"]=["CCC","GGG"]
+    couple["C23"]=["CCG","GGC"]
+    couple["C24"]=["CCT","GGA"]
+    couple["C25"]=["CGA","GCT"]
+    couple["C26"]=["CGC","GCG"]
+    couple["C27"]=["CGG","GCC"]
+    couple["C28"]=["CGT","GCA"]
+    couple["C29"]=["CTA","GAT"]
+    couple["C30"]=["CTC","GAG"]
+    couple["C31"]=["CTG","GAC"]
+    couple["C32"]=["CTT","GAA"]
+
+    #list of the triplets used to create an empty DataFrame
+    new_col=list(couple.keys())
+    data_couple=pd.DataFrame(columns=new_col)
+
+    for element in couple:
+        #only two triplets of interest
+        temp_data=data[couple[element]]
+        #seq name of the two triplets
+        AA1=couple[element][0]
+        AA2=couple[element][1]
+        cup_values=[]
+        #cycle on each row to eaxtract triplets fres
+        for index, row in data.iterrows():
+            AA_values=[]
+            #pseudo count (1) is added to avoid division by 0
+            AA_values.append(row[AA1]+1)
+            AA_values.append(row[AA2]+1)
+            #freq values with increasing order
+            AA_values.sort()
+            #ratio of the freq (alway smaller/bigger)
+            cup_values.append(AA_values[0]/AA_values[1])
+
+        #add the values to the couple column
+        data_couple[element]=cup_values
+
+    data_couple=data_couple.round(2)
+    data_couple.to_csv(args.output, sep="\t",index=False, )
+
 
 if __name__ == "__main__":
     main()
