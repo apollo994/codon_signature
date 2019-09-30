@@ -24,6 +24,4 @@ Where `RefSeq_table` is a table cointaining the following column (tab separated)
 
 `Taxon_IDs_list` is a .txt file that cointains one **Taxid** per line and reppresent the list of species you want for generate the final codon signature table (one for each Taxid)
 
-`run_name` is the name used to name the folder cointainig the outputs
-
-In the `results_run_name` folder you will find as many file as many Taxid you askd for, each of them reppresenting the codon signature of each species.
+`run_name` is the name used to name the folder cointainig as many file as many Taxid you askd for, each of them reppresenting the codon signature of each species.
