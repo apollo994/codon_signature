@@ -84,9 +84,11 @@ def main():
         #cycle on each row to eaxtract triplets fres
         for index, row in data.iterrows():
             AA_values=[]
-            #pseudo count (1) is added to avoid division by 0
-            AA_values.append(row[AA1]+1)
-            AA_values.append(row[AA2]+1)
+            AA_values.append(row[AA1])
+            AA_values.append(row[AA2])
+            ##pseudo count (1) is added to avoid division by 0
+            #AA_values.append(row[AA1]+1)
+            #AA_values.append(row[AA2]+1)
             #freq values with increasing order
             AA_values.sort()
             #ratio of the freq (alway smaller/bigger)
