@@ -65,7 +65,11 @@ def main():
     # that is has only the rows where RefSeq is equal to the input Tax Id
     data=(data.loc[args.id,to_keep])
     if verbose==True:
-        print("DataFrame columns\n",data,"\n Done")
+        print("DataFrame columns\n",data,"\n Done\n")
+    #Perform pseudocount by adding 1
+    data=data.applymap(lambda x : x+1 if type(x)==int else x)
+    if verbose==True:
+        print("DataFrame pseudocount\n",data,"\n Done")
     # data.index.names = [None]
     ratio_all=pd.DataFrame(data["Assembly"],index=data.index)
     if verbose==True:
@@ -88,8 +92,8 @@ def main():
     #to do explicitely declares which columns has to be rounded
     ratio_all=ratio_all.round(2)
     #filename=str(args.output)+".tsv"
-    #ratio_all.to_csv(filename, sep='\t')
-    ratio_all.to_csv(args.output, sep='\t')
+    filename=str(args.output)
+    ratio_all.to_csv(filename, sep='\t')
 
 if __name__ == "__main__":
     main()
