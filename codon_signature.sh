@@ -6,7 +6,7 @@ refseq_tab=$1
 idx_list=$2
 run_name=$3
 
-python=python3.6
+python=python3.7
 
 result_folder="results_$run_name"
 

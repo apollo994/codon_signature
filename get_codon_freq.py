@@ -67,7 +67,7 @@ def main():
     if verbose==True:
         print("DataFrame columns\n",data,"\n Done\n")
     #Perform pseudocount by adding 1
-    data=data.applymap(lambda x : x+1 if type(x)==int else x)
+    #data=data.applymap(lambda x : x+1 if type(x)==int else x)
     if verbose==True:
         print("DataFrame pseudocount\n",data,"\n Done")
     # data.index.names = [None]
@@ -90,7 +90,7 @@ def main():
             print("Relative frequency of codon usage for",AA,":\n", ratio_subdata,"\n Done")
         ratio_all=pd.concat([ratio_all,ratio_subdata], axis=1)
     #to do explicitely declares which columns has to be rounded
-    ratio_all=ratio_all.round(2)
+    #ratio_all=ratio_all.round(2)
     #filename=str(args.output)+".tsv"
     filename=str(args.output)
     ratio_all.to_csv(filename, sep='\t')
