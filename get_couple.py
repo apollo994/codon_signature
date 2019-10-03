@@ -101,7 +101,7 @@ def main():
     couple["C28"]=["AAT","ATT"]
     couple["C29"]=["CAC","GTG"]
     couple["C30"]=["AAA","TTT"]
-    couple["C32"]=["CGC","GCG"]
+    couple["C31"]=["CGC","GCG"]
     couple["C32"]=["ACT","AGT"]
 
     #list of the triplets used to create an empty DataFrame
