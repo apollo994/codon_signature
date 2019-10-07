@@ -20,6 +20,7 @@ def get_column_distribution(data, limit):
     distributions = {}
     freqs = {}
     for column_name in data.columns:
+        print(column_name)
         column_values = data[column_name].values
         for value in column_values:
             try:
@@ -34,10 +35,21 @@ def get_column_distribution(data, limit):
         freqs = {freq: freqs[freq]/total for freq in freqs}
         #print(freqs)
         sorted_freqs = sorted(freqs.items(), key=operator.itemgetter(1, 0), reverse=True)
+        touched_values = set()
+        max_percent = sorted_freqs[0][1]
+        maxima = []
+        maxima.append(sorted_freqs[0][0])
+        touched_values.add(sorted_freqs[0][0])
+        #print(max_percent)
+        for tup in sorted_freqs:
+            if tup[1] == max_percent and not tup[0] in maxima:
+                maxima.append(tup[0])
+                touched_values.add(tup[0])
+        print(maxima, touched_values)
         
         #rel_freqs = {values[0]: values[1]/total for values in sorted_abs_freqs}
         #print(rel_freqs)
-        print(column_name)
+        #print(column_name)
         print(sorted_freqs)
         index = 0
         max_value = sorted_freqs[index]
