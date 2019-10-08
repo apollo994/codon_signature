@@ -20,7 +20,7 @@ def parse_table(inpath):
 def get_column_distribution(data, limit):
     distributions = {}
     for column_name in data.columns:
-        print(column_name)
+        #print(column_name)
         freqs = {}
         column_values = data[column_name].values
         for value in column_values:
@@ -31,8 +31,6 @@ def get_column_distribution(data, limit):
         #Transform absolute freqs into relative freqs
         total = reduce(lambda x,y: x+y, freqs.values())
         freqs = {freq: freqs[freq]/total for freq in freqs}
-        if column_name == 'C32':
-            print(freqs)
         #print(freqs)
         sorted_freqs = sorted(freqs.items(), key=operator.itemgetter(1, 0), reverse=True)                                 
         #set to check which values have already been considered
@@ -70,34 +68,34 @@ def get_column_distribution(data, limit):
         else:
             #dictionary to keep track of the extension around the maxima
             maxima_dict = {maxi: {0: maxi - 0.01, 1: maxi + 0.01} for maxi in maxima}
-            print('before')
-            print(maxima_dict)
+            #print('before')
+            #print(maxima_dict)
             def find_next_value(ptg):
                 nbr_values = []
                 #go through neighbors of all maxima to find new best value
                 for maxi in maxima:
                     left = maxima_dict[maxi][0]
                     right = maxima_dict[maxi][1]
-                    print(left, right)
+                    #print(left, right)
                     if not left in touched_values and left in freqs:
                         nbr_values.append(((maxi, 0), freqs[left]))
                     if not right in touched_values and right in freqs:
                         #touched_values.add(right)
                         #maxima_dict[maxi][1] += 0.01
                         nbr_values.append(((maxi, 1), freqs[right]))
-                    print('NBR')
-                    print(nbr_values)
+                    #print('NBR')
+                    #print(nbr_values)
                 if nbr_values:
                     next_step = (sorted(nbr_values, key=operator.itemgetter(1), reverse=True))[0]
-                    print('next')
-                    print(next_step)                        #next_max = sorted(nbr_values)[0]
+                    #print('next')
+                    #print(next_step)                        #next_max = sorted(nbr_values)[0]
                     next_value = maxima_dict[next_step[0][0]][next_step[0][1]]
                     next_max = next_step[1]
                     #print(next_max)
                     #print(next_value)
                     #update list of touched values
                     touched_values.add(next_value)
-                    print(touched_values)
+                    #print(touched_values)
                     #update maxima_dict
                     curr_max = next_step[0][0]
                     nbr = next_step[0][1]
@@ -113,20 +111,20 @@ def get_column_distribution(data, limit):
                 else:
                     return False
             while percentage < limit:
-                print(percentage)
+                #print(percentage)
                 next_step = find_next_value(percentage)
-                print(next_step)
+                #print(next_step)
                 if next_step:
                     distributions[column_name][next_step[0]] = next_step[1]
                     #print(distributions)
-                    old_percentage = percentage
+                    #old_percentage = percentage
                     #print('move on')
-                    percentage += next_step[1]
+                    percentage = math.fsum([percentage, next_step[1]])
                     #percentage = round(percentage, 2)
-                    if percentage == old_percentage:
-                        print('STOP')
-                        break
-                #limit cannot be reached, stop extension
+                    #if percentage == old_percentage:
+                        #print('STOP')
+                        #break
+                #limit cannot be reached because reached only zeros, stop extension
                 else:
                     #distributions[column_name][next_step[0]] = freqs[next_step[0]]
                     break
@@ -160,13 +158,13 @@ def main():
 
     parser = argparse.ArgumentParser(description='My nice tool.')
     parser.add_argument('-i', '--input', metavar='INPUTFILE', default="/dev/stdin", help='The input file.')
-    #parser.add_argument('--id', metavar='ID',help='RefSeq tax ID',type=int)
     parser.add_argument('-o', '--output', metavar='OUTPUTFILE', default="/dev/stdout", help='The output file.')
+    parser.add_argument('-r', '--rows', metavar='int', type=int, help='Number of rows for model training.', nargs='?', const=10000, default=10000)
+    parser.add_argument('-t', '--threshold', metavar='float', type=float, help='Threshold for value inclusion.', nargs='?', const=0.9, default=0.9)
     args = parser.parse_args()
-
-    threshold = 0.9
-    nr_rows = 10
-
+    
+    threshold = args.threshold
+    nr_rows = args.rows
     inpath = args.input
     outpath = args.output
 
@@ -174,14 +172,15 @@ def main():
     distributions = get_column_distribution(table, threshold)
     #print(distributions)
     for column in distributions:
-        print(column)
+        pct = reduce(lambda x,y: x+y, distributions[column].values())
+        #print(column)
+        print(column, round(pct, 2))
         print(distributions[column].keys())
-        print(reduce(lambda x,y: x+y, distributions[column].values()))
     #print(distributions)
-    #training_data = build_table(distributions, nr_rows)
+    training_data = build_table(distributions, nr_rows)
     #print(training_data)
     #Write output
-    #training_data.to_csv(outpath, sep='\t', index=False)
+    training_data.to_csv(outpath, sep='\t', index=False)
 
 if __name__ == "__main__":
     main()
