@@ -32,7 +32,7 @@ def get_column_distribution(data, limit):
         total = reduce(lambda x,y: x+y, freqs.values())
         freqs = {freq: freqs[freq]/total for freq in freqs}
         #print(freqs)
-        sorted_freqs = sorted(freqs.items(), key=operator.itemgetter(1, 0), reverse=True)                                 
+        sorted_freqs = sorted(freqs.items(), key=operator.itemgetter(1, 0), reverse=True)
         #set to check which values have already been considered
         touched_values = set()
         #the highest percentage value
@@ -49,22 +49,22 @@ def get_column_distribution(data, limit):
                 #means no more maxima possible, no need to loop over the rest
                 break
 
-        #enter the values of the maxima for the column distribution        
+        #enter the values of the maxima for the column distribution
         #print(maxima)
         for mx in maxima:
             try:
                 distributions[column_name][mx] = max_percent
             except:
                 distributions[column_name] = {mx: max_percent}
-        
+
         #check if the maxima already cover more than the threshold because then
         #no need to continue
-        percentage = len(maxima)*max_percent        
+        percentage = len(maxima)*max_percent
         if percentage >= limit:
             #print('enough!')
             continue
-        
-        #if the maxima do not cover the limit, extend the range of values        
+
+        #if the maxima do not cover the limit, extend the range of values
         else:
             #dictionary to keep track of the extension around the maxima
             maxima_dict = {maxi: {0: maxi - 0.01, 1: maxi + 0.01} for maxi in maxima}
@@ -130,7 +130,7 @@ def get_column_distribution(data, limit):
                     break
             #distributions[column_name][next_step[0]] = freqs[next_step[0]]
             #print(distributions)
-    return distributions            
+    return distributions
 
 def build_table(distributions, nr):
     sample_dict = {}
@@ -162,7 +162,7 @@ def main():
     parser.add_argument('-r', '--rows', metavar='int', type=int, help='Number of rows for model training.', nargs='?', const=10000, default=10000)
     parser.add_argument('-t', '--threshold', metavar='float', type=float, help='Threshold for value inclusion.', nargs='?', const=0.9, default=0.9)
     args = parser.parse_args()
-    
+
     threshold = args.threshold
     nr_rows = args.rows
     inpath = args.input
@@ -171,11 +171,11 @@ def main():
     table = parse_table(inpath)
     distributions = get_column_distribution(table, threshold)
     #print(distributions)
-    for column in distributions:
-        pct = reduce(lambda x,y: x+y, distributions[column].values())
-        #print(column)
-        print(column, round(pct, 2))
-        print(distributions[column].keys())
+    # for column in distributions:
+    #     pct = reduce(lambda x,y: x+y, distributions[column].values())
+    #     #print(column)
+    #     print(column, round(pct, 2))
+    #     print(distributions[column].keys())
     #print(distributions)
     training_data = build_table(distributions, nr_rows)
     #print(training_data)
