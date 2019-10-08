@@ -1,22 +1,40 @@
-#Andreas
+#Author: Andreas Blaumeiser, Joint Research Centre F7 Unit, Ispra (Italy)
+#Date: 2019-10-08
 
-import os
-import sys
 import argparse
-from collections import defaultdict
-import pandas as pd
-import numpy as np
-import collections
-import operator
+import fractions
 from functools import reduce
 import math
-import numpy
-import fractions
+import numpy as np
+import operator
+import pandas as pd
 
+
+#parse_table
+#Reads in the data from the input file.
+#
+#Parameters:
+#inpath: path to the input file
+#
+#Output:
+#data from the input file transformed into a Pandas dataframe
 def parse_table(inpath):
     data = pd.read_csv(inpath, sep='\t', index_col=False, low_memory=False)
     return data
 
+
+#get_column_distribution
+#Finds the most common values for each data column and constructs a
+#distribution.
+#
+#Parameters:
+#data: dataframe with all fraction values for the pairs of complementary codons
+#limit: the defined threshold of how much percentage of the column should be
+#       covered by the selected values
+#
+#Output:
+#dictionary with the most common values per column and the percentage that of
+#the total column that these values cover
 def get_column_distribution(data, limit):
     distributions = {}
     for column_name in data.columns:
@@ -32,7 +50,9 @@ def get_column_distribution(data, limit):
         total = reduce(lambda x,y: x+y, freqs.values())
         freqs = {freq: freqs[freq]/total for freq in freqs}
         #print(freqs)
-        sorted_freqs = sorted(freqs.items(), key=operator.itemgetter(1, 0), reverse=True)
+        sorted_freqs = sorted(
+            freqs.items(), key=operator.itemgetter(1, 0), reverse=True
+        )
         #set to check which values have already been considered
         touched_values = set()
         #the highest percentage value
@@ -61,7 +81,6 @@ def get_column_distribution(data, limit):
         #no need to continue
         percentage = len(maxima)*max_percent
         if percentage >= limit:
-            #print('enough!')
             continue
 
         #if the maxima do not cover the limit, extend the range of values
@@ -116,14 +135,7 @@ def get_column_distribution(data, limit):
                 #print(next_step)
                 if next_step:
                     distributions[column_name][next_step[0]] = next_step[1]
-                    #print(distributions)
-                    #old_percentage = percentage
-                    #print('move on')
                     percentage = math.fsum([percentage, next_step[1]])
-                    #percentage = round(percentage, 2)
-                    #if percentage == old_percentage:
-                        #print('STOP')
-                        #break
                 #limit cannot be reached because reached only zeros, stop extension
                 else:
                     #distributions[column_name][next_step[0]] = freqs[next_step[0]]
@@ -132,6 +144,17 @@ def get_column_distribution(data, limit):
             #print(distributions)
     return distributions
 
+
+#build_table
+#Creates a table of values for each pair of codons column picked randomly
+#with a distribution according to all values in the column.
+#
+#Parameters:
+#distributions: dictionary with the precalculated distributions for the columns
+#nr: number of rows that the table should have
+#
+#Output:
+#Pandas dataframe with the random values for each column
 def build_table(distributions, nr):
     sample_dict = {}
     #re-scaling to 1 (since it is supposed to be a distribution)
@@ -142,44 +165,56 @@ def build_table(distributions, nr):
         percent = reduce(lambda x,y: x+y, values)
         #norm_values = [round(value/percent, 2) for value in values]
 
-        norm_values = [fractions.Fraction(value/percent).limit_denominator() for value in values]
+        norm_values = [
+            fractions.Fraction(value/percent).limit_denominator()
+            for value in values
+        ]
         if reduce(lambda x,y: x+y, norm_values) != 1:
             print('numerical issue with {}'.format(column))
             #print(norm_values)
         else:
-            sample = numpy.random.choice(keys, p=list(norm_values), size=nr)
+            sample = np.random.choice(keys, p=list(norm_values), size=nr)
             sample_dict[column] = sample
 
     sample_df = pd.DataFrame(sample_dict)
     #print(sample_df)
     return sample_df
 
+
 def main():
-
+    #argument parsing
     parser = argparse.ArgumentParser(description='My nice tool.')
-    parser.add_argument('-i', '--input', metavar='INPUTFILE', default="/dev/stdin", help='The input file.')
-    parser.add_argument('-o', '--output', metavar='OUTPUTFILE', default="/dev/stdout", help='The output file.')
-    parser.add_argument('-r', '--rows', metavar='int', type=int, help='Number of rows for model training.', nargs='?', const=10000, default=10000)
-    parser.add_argument('-t', '--threshold', metavar='float', type=float, help='Threshold for value inclusion.', nargs='?', const=0.9, default=0.9)
+    parser.add_argument(
+        '-i', '--input', metavar='INPUTFILE', default="/dev/stdin",
+        help='The input file.'
+    )
+    parser.add_argument(
+        '-o', '--output', metavar='OUTPUTFILE', default="/dev/stdout",
+        help='The output file.'
+    )
+    parser.add_argument(
+        '-r', '--rows', metavar='int', type=int, const=10000, default=10000,  
+        nargs='?', help='Number of rows for model training.'
+    )
+    parser.add_argument(
+        '-t', '--threshold', metavar='float', type=float, const=0.9,
+         help='Threshold for value inclusion.',nargs='?', default=0.9
+    )
     args = parser.parse_args()
-
+    
+    #defining global parameters according to the command line arguments
     threshold = args.threshold
     nr_rows = args.rows
     inpath = args.input
     outpath = args.output
 
+    #parse input
     table = parse_table(inpath)
+    #build the distributions for the columns
     distributions = get_column_distribution(table, threshold)
-    #print(distributions)
-    # for column in distributions:
-    #     pct = reduce(lambda x,y: x+y, distributions[column].values())
-    #     #print(column)
-    #     print(column, round(pct, 2))
-    #     print(distributions[column].keys())
-    #print(distributions)
+    #create the table with the random samples for each column
     training_data = build_table(distributions, nr_rows)
-    #print(training_data)
-    #Write output
+    #write the table as .tsv to the output file
     training_data.to_csv(outpath, sep='\t', index=False)
 
 if __name__ == "__main__":
