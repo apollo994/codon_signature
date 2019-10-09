@@ -1,6 +1,7 @@
 #Author: Andreas Blaumeiser, Joint Research Centre F7 Unit, Ispra (Italy)
-#Date: 2019-10-08
-
+#Date: 2019-10-09
+#TODO: move re-scaling from build_table to get_column_distribution function
+ 
 import argparse
 import fractions
 from functools import reduce
@@ -33,12 +34,14 @@ def parse_table(inpath):
 #       covered by the selected values
 #
 #Output:
-#dictionary with the most common values per column and the percentage that of
-#the total column that these values cover
+#dictionary with the most common values per column and the percentage of the
+#total column that these values cover
 def get_column_distribution(data, limit):
+    #the eventual output of the function
     distributions = {}
+    #find the distribution for each column
     for column_name in data.columns:
-        #print(column_name)
+        #count the absolute frequencies
         freqs = {}
         column_values = data[column_name].values
         for value in column_values:
@@ -46,102 +49,87 @@ def get_column_distribution(data, limit):
                 freqs[value] += 1
             except:
                 freqs[value] = 1
-        #Transform absolute freqs into relative freqs
+        #transform absolute freqs into relative freqs
         total = reduce(lambda x,y: x+y, freqs.values())
         freqs = {freq: freqs[freq]/total for freq in freqs}
-        #print(freqs)
+        #sort the values according to the frequencies to find the maxima
         sorted_freqs = sorted(
-            freqs.items(), key=operator.itemgetter(1, 0), reverse=True
+            freqs.items(), key=operator.itemgetter(1), reverse=True
         )
-        #set to check which values have already been considered
-        touched_values = set()
         #the highest percentage value
         max_percent = sorted_freqs[0][1]
         #find the list of all maxima
-        maxima = []
-        for tup in sorted_freqs:
-            #print(tup)
-            if tup[1] == max_percent:
-                #print('Going to add {}'.format(tup))
-                maxima.append(tup[0])
-                touched_values.add(tup[0])
-            else:
-                #means no more maxima possible, no need to loop over the rest
-                break
-
-        #enter the values of the maxima for the column distribution
-        #print(maxima)
+        maxima = [tup[0] for tup in sorted_freqs if tup[1] == max_percent]
+        #add the values of the maxima to the column distribution
         for mx in maxima:
             try:
                 distributions[column_name][mx] = max_percent
             except:
                 distributions[column_name] = {mx: max_percent}
-
         #check if the maxima already cover more than the threshold because then
         #no need to continue
         percentage = len(maxima)*max_percent
         if percentage >= limit:
             continue
-
         #if the maxima do not cover the limit, extend the range of values
         else:
+            #set to check which values have already been added to avoid
+            #repeated considerations of values (all maxima belong to this
+            #set by default)
+            touched_values = set(maxima)
             #dictionary to keep track of the extension around the maxima
-            maxima_dict = {maxi: {0: maxi - 0.01, 1: maxi + 0.01} for maxi in maxima}
-            #print('before')
-            #print(maxima_dict)
+            #0: left neighbor, 1: right neighbor
+            maxima_dict = {
+                maxi: {0: maxi - 0.01, 1: maxi + 0.01} for maxi in maxima
+            }
+
+            #auxiliary function to identify the next best value that should
+            #be added to the column's distribution
             def find_next_value(ptg):
                 nbr_values = []
                 #go through neighbors of all maxima to find new best value
                 for maxi in maxima:
                     left = maxima_dict[maxi][0]
                     right = maxima_dict[maxi][1]
-                    #print(left, right)
+
                     if not left in touched_values and left in freqs:
                         nbr_values.append(((maxi, 0), freqs[left]))
                     if not right in touched_values and right in freqs:
-                        #touched_values.add(right)
-                        #maxima_dict[maxi][1] += 0.01
                         nbr_values.append(((maxi, 1), freqs[right]))
-                    #print('NBR')
-                    #print(nbr_values)
+
                 if nbr_values:
                     next_step = (sorted(nbr_values, key=operator.itemgetter(1), reverse=True))[0]
-                    #print('next')
-                    #print(next_step)                        #next_max = sorted(nbr_values)[0]
                     next_value = maxima_dict[next_step[0][0]][next_step[0][1]]
                     next_max = next_step[1]
-                    #print(next_max)
-                    #print(next_value)
                     #update list of touched values
                     touched_values.add(next_value)
-                    #print(touched_values)
                     #update maxima_dict
                     curr_max = next_step[0][0]
                     nbr = next_step[0][1]
+                    #values need to be rounded to avoid floating point issues,
+                    #e.g. 0.81+0.01=0.8200000000000001 in vanilla Python
                     if nbr == 0:
                         new_left = round(maxima_dict[curr_max][0] - 0.01, 2)
                         maxima_dict[curr_max][0] = new_left
                     elif nbr == 1:
                         new_right = round(maxima_dict[curr_max][1] + 0.01, 2)
                         maxima_dict[curr_max][1] = new_right
-                    #print('after')
-                    #print(maxima_dict)
                     return (next_value, next_max)
                 else:
                     return False
+
+            #if the limit has not been reached yet, more values can be added
+            #to the distribution by calling the find_next_value function
             while percentage < limit:
-                #print(percentage)
                 next_step = find_next_value(percentage)
-                #print(next_step)
                 if next_step:
                     distributions[column_name][next_step[0]] = next_step[1]
                     percentage = math.fsum([percentage, next_step[1]])
-                #limit cannot be reached because reached only zeros, stop extension
+                #limit cannot be reached because the next step reached only
+                #zeros (or went out of boundaries - <0 or >1), stop extension
                 else:
-                    #distributions[column_name][next_step[0]] = freqs[next_step[0]]
                     break
-            #distributions[column_name][next_step[0]] = freqs[next_step[0]]
-            #print(distributions)
+                
     return distributions
 
 
@@ -163,27 +151,26 @@ def build_table(distributions, nr):
         keys = list(distributions[column].keys())
         values = list(distributions[column].values())
         percent = reduce(lambda x,y: x+y, values)
-        #norm_values = [round(value/percent, 2) for value in values]
-
+        #Fraction method must be used to avoid floating point issues that will
+        #cause the re-scaled values to not add up to 1
         norm_values = [
             fractions.Fraction(value/percent).limit_denominator()
             for value in values
         ]
+
         if reduce(lambda x,y: x+y, norm_values) != 1:
             print('numerical issue with {}'.format(column))
-            #print(norm_values)
         else:
             sample = np.random.choice(keys, p=list(norm_values), size=nr)
             sample_dict[column] = sample
 
     sample_df = pd.DataFrame(sample_dict)
-    #print(sample_df)
     return sample_df
 
 
 def main():
     #argument parsing
-    parser = argparse.ArgumentParser(description='My nice tool.')
+    parser = argparse.ArgumentParser(description='Codon usage sample tool.')
     parser.add_argument(
         '-i', '--input', metavar='INPUTFILE', default="/dev/stdin",
         help='The input file.'
