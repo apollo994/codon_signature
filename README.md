@@ -13,7 +13,7 @@ Clone the repo cointinig the scripts and run it as follow:
 
 ```
 git clone https://github.com/apollo994/codon_signature.git
-bash codon_signature/codon_signature.sh RefSeq_table Taxon_IDs_list run_name
+bash codon_signature/preprocessing/codon_signature.sh RefSeq_table Taxon_IDs_list run_name
 ```
 
 Where `RefSeq_table` is a table cointaining the following column (tab separated):
