@@ -33,42 +33,12 @@ def main():
     #     print("couple[\"C"+str(i)+"\"]=[\""+codons1[i-1]+"\",\""+codons2[i-1]+"\"]")
 
     #read rge triplets freq table from step1
-    data=pd.read_csv(args.input, sep="\t", index_col=False, low_memory=False)
+    data=pd.read_csv(args.input, sep="\t", index_col="Assembly", low_memory=False)
+    ass_id=data.index.tolist()
+
 
     #dictionary cointainig the complementary triplets
     couple = dict()
-    # couple["C1"]=["AAA","TTT"]
-    # couple["C2"]=["AAC","TTG"]
-    # couple["C3"]=["AAG","TTC"]
-    # couple["C4"]=["AAT","TTA"]
-    # couple["C5"]=["ACA","TGT"]
-    # couple["C6"]=["ACC","TGG"]
-    # couple["C7"]=["ACG","TGC"]
-    # couple["C8"]=["ACT","TGA"]
-    # couple["C9"]=["AGA","TCT"]
-    # couple["C10"]=["AGC","TCG"]
-    # couple["C11"]=["AGG","TCC"]
-    # couple["C12"]=["AGT","TCA"]
-    # couple["C13"]=["ATA","TAT"]
-    # couple["C14"]=["ATC","TAG"]
-    # couple["C15"]=["ATG","TAC"]
-    # couple["C16"]=["ATT","TAA"]
-    # couple["C17"]=["CAA","GTT"]
-    # couple["C18"]=["CAC","GTG"]
-    # couple["C19"]=["CAG","GTC"]
-    # couple["C20"]=["CAT","GTA"]
-    # couple["C21"]=["CCA","GGT"]
-    # couple["C22"]=["CCC","GGG"]
-    # couple["C23"]=["CCG","GGC"]
-    # couple["C24"]=["CCT","GGA"]
-    # couple["C25"]=["CGA","GCT"]
-    # couple["C26"]=["CGC","GCG"]
-    # couple["C27"]=["CGG","GCC"]
-    # couple["C28"]=["CGT","GCA"]
-    # couple["C29"]=["CTA","GAT"]
-    # couple["C30"]=["CTC","GAG"]
-    # couple["C31"]=["CTG","GAC"]
-    # couple["C32"]=["CTT","GAA"]
 
 
     couple["C1"]=["AAG","CTT"]
@@ -111,7 +81,7 @@ def main():
     for element in couple:
         #only two triplets of interest
         temp_data=data[couple[element]]
-        #print (temp_data)
+
         #seq name of the two triplets
         AA1=couple[element][0]
         AA2=couple[element][1]
@@ -121,9 +91,7 @@ def main():
             AA_values=[]
             AA_values.append(row[AA1])
             AA_values.append(row[AA2])
-            ##pseudo count (1) is added to avoid division by 0
-            #AA_values.append(row[AA1]+1)
-            #AA_values.append(row[AA2]+1)
+
             #freq values with increasing order
             AA_values.sort()
             #ratio of the freq (alway smaller/bigger)
@@ -132,7 +100,7 @@ def main():
         #add the values to the couple column
         data_couple[element]=cup_values
 
-
+    data_couple["Assembly"]=ass_id
     data_couple=data_couple.round(2)
     data_couple.to_csv(args.output, sep="\t",index=False, )
 
