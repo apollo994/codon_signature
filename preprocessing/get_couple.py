@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # Fabio Zanarello, JRC-ispra, 2019
 
 

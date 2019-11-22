@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 #Author: Andreas Blaumeiser, Joint Research Centre F7 Unit, Ispra (Italy)
 #Date: 2019-10-09
 #TODO: move re-scaling from build_table to get_column_distribution function
@@ -20,7 +22,7 @@ import pandas as pd
 #Output:
 #data from the input file transformed into a Pandas dataframe
 def parse_table(inpath):
-    data = pd.read_csv(inpath, sep='\t', index_col=False, low_memory=False)
+    data = pd.read_csv(inpath, sep='\t', index_col="Assembly", low_memory=False)
     return data
 
 
