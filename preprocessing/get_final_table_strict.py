@@ -12,7 +12,7 @@ import operator
 import pandas as pd
 
 
-#parse_table
+def parse_table(inpath):
 #Reads in the data from the input file.
 #
 #Parameters:
@@ -20,12 +20,12 @@ import pandas as pd
 #
 #Output:
 #data from the input file transformed into a Pandas dataframe
-def parse_table(inpath):
+    
     data = pd.read_csv(inpath, sep='\t', index_col=False, low_memory=False)
     return data
 
 
-#get_column_distribution
+def get_column_distribution(data, limit):
 #Finds the most common values for each data column and constructs a
 #distribution.
 #
@@ -37,7 +37,7 @@ def parse_table(inpath):
 #Output:
 #dictionary with the most common values per column and the percentage of the
 #total column that these values cover
-def get_column_distribution(data, limit):
+
     #the eventual output of the function
     distributions = OrderedDict()
     #find the distribution for each column
@@ -51,7 +51,8 @@ def get_column_distribution(data, limit):
             except:
                 freqs[value] = 1
         #transform absolute freqs into relative freqs
-        total = reduce(lambda x,y: x+y, freqs.values())
+        #total = reduce(lambda x,y: x+y, freqs.values())
+        total = sum(freqs.values())
         freqs = {freq: freqs[freq]/total for freq in freqs}
         #sort the values according to the frequencies to find the maxima
         sorted_freqs = sorted(
@@ -140,19 +141,45 @@ def get_column_distribution(data, limit):
 def filter_rows(table, distributions):
     #Find min/max
     min_max_dict = {
-            codon: (min(distributions[codon].keys()),max(distributions[codon].keys())) for codon in distributions
-            }
-    print(min_max_dict)
+        codon: (
+                min(distributions[codon].keys()),
+                max(distributions[codon].keys())
+                )
+        for codon in distributions
+    }
+    
+    out_set = set()
+    
+    for column in table.columns:
+        min_value = min_max_dict[column][0]
+        max_value = min_max_dict[column][1]
+        #print(column, min_max_dict[column])
+        for row in table.index:
+            print(column, row)
+            print(table[column][row])
+            if table[column][row] >= min_value and table[column][row] <= max_value:
+                print('IN')
+            else:
+                print('OUT')
+                out_set.add(row)
+    
+    print(out_set)
+    print(len(out_set))
+    reduced_table = table.drop(list(out_set))
+    print(reduced_table)
+    return reduced_table
+    #print(min_max_dict)
+    
+    #print(table.columns)
+    #print(table.index)
     
     #Filter rows if their values are not in the min/max range
-    for row in table.itertuples():
-        for value in row:
-            print(value)
+#    for row in table.itertuples():
+#        for value in row:
+#            print(value)
 
 
-
-
-#build_table
+def build_table(distributions, nr):
 #Creates a table of values for each pair of codons column picked randomly
 #with a distribution according to all values in the column.
 #
@@ -162,7 +189,7 @@ def filter_rows(table, distributions):
 #
 #Output:
 #Pandas dataframe with the random values for each column
-def build_table(distributions, nr):
+    
     sample_dict = {}
     #re-scaling to 1 (since it is supposed to be a distribution)
     #Should be moved to get_column_distribution function
