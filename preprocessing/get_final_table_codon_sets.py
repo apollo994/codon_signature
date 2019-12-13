@@ -37,15 +37,70 @@ def parse_table(inpath):
 #Output:
 #data from the input file transformed into a Pandas dataframe
     
-    data = pd.read_csv(inpath, sep='\t', index_col=False, low_memory=False)
+    data = pd.read_csv(
+            inpath, sep='\t', index_col=False, low_memory=False
+            ).round(2)
     data.drop('Taxid', axis=1, inplace=True)
     data.set_index('Assembly', inplace=True)
+    #data.round(2, inplace=True)
     #print(data.columns)
     return data
 
 
 def get_codon_distribution(data):
     
+    synonymous_codons = {
+        "CYS": ["TGT", "TGC"],
+        "ASP": ["GAT", "GAC"],
+        "SER": ["TCT", "TCG", "TCA", "TCC", "AGC", "AGT"],
+        "GLN": ["CAA", "CAG"],
+        "MET": ["ATG"],
+        "ASN": ["AAC", "AAT"],
+        "PRO": ["CCT", "CCG", "CCA", "CCC"],
+        "LYS": ["AAG", "AAA"],
+        "STOP": ["TAG", "TGA", "TAA"],
+        "THR": ["ACC", "ACA", "ACG", "ACT"],
+        "PHE": ["TTT", "TTC"],
+        "ALA": ["GCA", "GCC", "GCG", "GCT"],
+        "GLY": ["GGT", "GGG", "GGA", "GGC"],
+        "ILE": ["ATC", "ATA", "ATT"],
+        "LEU": ["TTA", "TTG", "CTC", "CTT", "CTG", "CTA"],
+        "HIS": ["CAT", "CAC"],
+        "ARG": ["CGA", "CGC", "CGG", "CGT", "AGG", "AGA"],
+        "TRP": ["TGG"],
+        "VAL": ["GTA", "GTC", "GTG", "GTT"],
+        "GLU": ["GAG", "GAA"],
+        "TYR": ["TAT", "TAC"]
+        }
+    
+    for amino_acid in synonymous_codons:
+        codon_values = data[synonymous_codons[amino_acid]]
+        print(amino_acid)
+        #print(codon_values)
+        frequencies = codon_values.groupby(synonymous_codons[amino_acid]).size().reset_index(name='Frequency')
+        sorted_freqs = frequencies.sort_values(by='Frequency', ascending=False)
+        sorted_freqs['Frequency'] = sorted_freqs['Frequency'].divide(sum(sorted_freqs['Frequency']))
+        print(sorted_freqs)
+        
+    
+#    frequencies = data.groupby(['TAT','TAC']).size().reset_index(name='Frequency')
+#    sorted_freqs = frequencies.sort_values(by='Frequency', ascending=False)
+#    sorted_freqs['Frequency'] = sorted_freqs['Frequency'].divide(sum(sorted_freqs['Frequency']))
+#    print(sorted_freqs)
+#    
+    #print(frequencies.sort_values(by='Frequency', ascending=False, inplace=True))
+    #frequencies.divide()
+    #print(frequencies)
+    
+    #print(data.groupby(['ATG','TAC']).size().reset_index(name='Frequency'))
+    #print(data.groupby(['ATG','TAC']).size().reset_index(name='Frequency').sort_values(by=['Frequency'], inplace=True))
+    #print(type(data.groupby(['ATG','TAC']).size().reset_index(name='Frequency')))
+    #print(pd.crosstab(data.ATG, data.TAC))
+    
+    #print(data[['ATG','CTG']].value_counts())
+    
+    
+    return None
 
 
 
@@ -281,9 +336,10 @@ def main():
     table = parse_table(inpath)
     #print(table.index)
     #build the distributions for the columns
-    distributions = get_column_distribution(table, threshold)
+    #distributions = get_column_distribution(table, threshold)
+    distributions = get_codon_distribution(table)
     
-    filtered_rows = filter_rows(table, distributions)
+    #filtered_rows = filter_rows(table, distributions)
     #print(distributions.keys())
     #print(distributions)
     #create the table with the random samples for each column
