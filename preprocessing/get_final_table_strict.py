@@ -22,6 +22,9 @@ def parse_table(inpath):
 #data from the input file transformed into a Pandas dataframe
     
     data = pd.read_csv(inpath, sep='\t', index_col=False, low_memory=False)
+    data.drop('Taxid', axis=1, inplace=True)
+    data.set_index('Assembly', inplace=True)
+    #print(data.columns)
     return data
 
 
@@ -147,26 +150,37 @@ def filter_rows(table, distributions):
                 )
         for codon in distributions
     }
+    #print(min_max_dict)
     
     out_set = set()
+    out_dict = {}
     
     for column in table.columns:
         min_value = min_max_dict[column][0]
         max_value = min_max_dict[column][1]
         #print(column, min_max_dict[column])
         for row in table.index:
-            print(column, row)
-            print(table[column][row])
+            #print(column, row)
+            #print(table[column][row])
             if table[column][row] >= min_value and table[column][row] <= max_value:
-                print('IN')
+                pass
+                #print('IN')
             else:
                 print('OUT')
+                print(column, row)
+                print(table[column][row])
+                print(min_max_dict[column])
                 out_set.add(row)
+                try:
+                    out_dict[row] += 1
+                except:
+                    out_dict[row] = 1
     
-    print(out_set)
+    #print(out_set)
     print(len(out_set))
-    reduced_table = table.drop(list(out_set))
+    reduced_table = table.drop(index=list(out_set))
     print(reduced_table)
+    #print(out_dict)
     return reduced_table
     #print(min_max_dict)
     
@@ -243,7 +257,7 @@ def main():
 
     #parse input
     table = parse_table(inpath)
-    #print(table)
+    #print(table.index)
     #build the distributions for the columns
     distributions = get_column_distribution(table, threshold)
     
