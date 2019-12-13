@@ -3,6 +3,7 @@
 #TODO: move re-scaling from build_table to get_column_distribution function
  
 import argparse
+from collections import OrderedDict
 import fractions
 from functools import reduce
 import math
@@ -38,7 +39,7 @@ def parse_table(inpath):
 #total column that these values cover
 def get_column_distribution(data, limit):
     #the eventual output of the function
-    distributions = {}
+    distributions = OrderedDict()
     #find the distribution for each column
     for column_name in data.columns:
         #count the absolute frequencies
@@ -98,7 +99,10 @@ def get_column_distribution(data, limit):
                         nbr_values.append(((maxi, 1), freqs[right]))
 
                 if nbr_values:
-                    next_step = (sorted(nbr_values, key=operator.itemgetter(1), reverse=True))[0]
+                    next_step = (
+                        sorted(nbr_values, key=operator.itemgetter(1),
+                               reverse=True)
+                    )[0]
                     next_value = maxima_dict[next_step[0][0]][next_step[0][1]]
                     next_max = next_step[1]
                     #update list of touched values
