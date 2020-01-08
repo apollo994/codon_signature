@@ -22,6 +22,7 @@ import argparse
 from collections import OrderedDict
 import fractions
 from functools import reduce
+import glob
 import math
 import numpy as np
 import operator
@@ -39,7 +40,8 @@ def parse_table(inpath):
     
     data = pd.read_csv(
             inpath, sep='\t', index_col=False, low_memory=False
-            ).round(2)
+            )
+    data = data.round(2)
     data.drop('Taxid', axis=1, inplace=True)
     data.set_index('Assembly', inplace=True)
     #data.round(2, inplace=True)
@@ -47,7 +49,9 @@ def parse_table(inpath):
     return data
 
 
-def get_codon_distribution(data):
+def get_codon_distribution(data, outpath, species):
+    
+    codon_df = pd.DataFrame
     
     synonymous_codons = {
         "CYS": ["TGT", "TGC"],
@@ -73,16 +77,33 @@ def get_codon_distribution(data):
         "TYR": ["TAT", "TAC"]
         }
     
+    outfile = open('{}/{}_output.tsv'.format(outpath, species), 'w')
+    #outfile.write('{}\n'.format(species))
     for amino_acid in synonymous_codons:
         codon_values = data[synonymous_codons[amino_acid]]
-        print(amino_acid)
-        #print(codon_values)
+        #print(amino_acid)
+        #print(codon_values)#
+        #Count the absolute frequencies of all combinations of codon values
         frequencies = codon_values.groupby(synonymous_codons[amino_acid]).size().reset_index(name='Frequency')
+        #Sort the codon sets according to their frequency
         sorted_freqs = frequencies.sort_values(by='Frequency', ascending=False)
+        #Transform the absolute values into relative ones
         sorted_freqs['Frequency'] = sorted_freqs['Frequency'].divide(sum(sorted_freqs['Frequency']))
-        print(sorted_freqs)
-        
+        #codon_df = pd.merge([codon_df, sorted_freqs])
+        #print(sorted_freqs.head(1))
+        #top_codons = sorted_freqs.head(1)['Frequency'].values[0].round(2)
+        top_codons = sorted_freqs.head(1)
+        #print(top_codons)
+        #outfile.write('{}\t{}\n'.format(amino_acid, top_codons))
+        #outfile.write()
+        outfile.write('{}\n'.format(amino_acid))
+        outfile.write(sorted_freqs.to_csv(sep='\t', index=False))
+        outfile.write('\n')
+        #outfile.write(top_codons.to_csv(sep='\t', index=False))
+        #outfile.write('{}\n'.format(sorted_freqs.head(1).to_string(index=False)))
     
+    outfile.close()
+
 #    frequencies = data.groupby(['TAT','TAC']).size().reset_index(name='Frequency')
 #    sorted_freqs = frequencies.sort_values(by='Frequency', ascending=False)
 #    sorted_freqs['Frequency'] = sorted_freqs['Frequency'].divide(sum(sorted_freqs['Frequency']))
@@ -105,6 +126,92 @@ def get_codon_distribution(data):
 
 
 
+def build_table(distributions, nr):
+#Creates a table of values for each pair of codons column picked randomly
+#with a distribution according to all values in the column.
+#
+#Parameters:
+#distributions: dictionary with the precalculated distributions for the columns
+#nr: number of rows that the table should have
+#
+#Output:
+#Pandas dataframe with the random values for each column
+    
+    sample_dict = {}
+    #re-scaling to 1 (since it is supposed to be a distribution)
+    #Should be moved to get_column_distribution function
+    for column in distributions:
+        keys = list(distributions[column].keys())
+        values = list(distributions[column].values())
+        percent = reduce(lambda x,y: x+y, values)
+        #Fraction method must be used to avoid floating point issues that will
+        #cause the re-scaled values to not add up to 1
+        norm_values = [
+            fractions.Fraction(value/percent).limit_denominator()
+            for value in values
+        ]
+
+        if reduce(lambda x,y: x+y, norm_values) != 1:
+            print('numerical issue with {}'.format(column))
+        else:
+            sample = np.random.choice(keys, p=list(norm_values), size=nr)
+            sample_dict[column] = sample
+
+    sample_df = pd.DataFrame(sample_dict)
+    return sample_df
+
+
+def main():
+    #argument parsing
+    parser = argparse.ArgumentParser(description='Codon usage sample tool.')
+    parser.add_argument(
+        '-i', '--input', metavar='INPUTFILE', default="/dev/stdin",
+        help='The input file.'
+    )
+    parser.add_argument(
+        '-o', '--output', metavar='OUTPUTFILE', default="/dev/stdout",
+        help='The output file.'
+    )
+    parser.add_argument(
+        '-r', '--rows', metavar='int', type=int, const=10000, default=10000,  
+        nargs='?', help='Number of rows for model training.'
+    )
+    parser.add_argument(
+        '-t', '--threshold', metavar='float', type=float, const=0.9,
+         help='Threshold for value inclusion.',nargs='?', default=0.9
+    )
+    args = parser.parse_args()
+    
+    #defining global parameters according to the command line arguments
+    threshold = args.threshold
+    nr_rows = args.rows
+    inpath = args.input
+    outpath = args.output
+    
+    #taxa = glob.glob('{}/666*.tsv'.format(inpath))
+    taxa = glob.glob('{}/*.tsv'.format(inpath))
+    for taxon in taxa:
+        species = taxon.split('/')[-1].split('_')[0]
+        table = parse_table(taxon)
+        #build the distributions for the columns
+        #distributions = get_column_distribution(table, threshold)
+        distributions = get_codon_distribution(table, outpath, species)
+        
+    #filtered_rows = filter_rows(table, distributions)
+    #print(distributions.keys())
+    #print(distributions)
+    #create the table with the random samples for each column
+    #training_data = build_table(distributions, nr_rows)
+    #write the table as .tsv to the output file
+    #training_data.to_csv(outpath, sep='\t', index=False)
+
+if __name__ == "__main__":
+    main()
+
+
+
+
+'''
 def get_column_distribution(data, limit):
 #Finds the most common values for each data column and constructs a
 #distribution.
@@ -216,9 +323,9 @@ def get_column_distribution(data, limit):
                     break
                 
     return distributions
-
-
-def filter_rows(table, distributions):
+    
+    
+    def filter_rows(table, distributions):
     #Find min/max
     min_max_dict = {
         codon: (
@@ -269,83 +376,4 @@ def filter_rows(table, distributions):
 #        for value in row:
 #            print(value)
 
-
-def build_table(distributions, nr):
-#Creates a table of values for each pair of codons column picked randomly
-#with a distribution according to all values in the column.
-#
-#Parameters:
-#distributions: dictionary with the precalculated distributions for the columns
-#nr: number of rows that the table should have
-#
-#Output:
-#Pandas dataframe with the random values for each column
-    
-    sample_dict = {}
-    #re-scaling to 1 (since it is supposed to be a distribution)
-    #Should be moved to get_column_distribution function
-    for column in distributions:
-        keys = list(distributions[column].keys())
-        values = list(distributions[column].values())
-        percent = reduce(lambda x,y: x+y, values)
-        #Fraction method must be used to avoid floating point issues that will
-        #cause the re-scaled values to not add up to 1
-        norm_values = [
-            fractions.Fraction(value/percent).limit_denominator()
-            for value in values
-        ]
-
-        if reduce(lambda x,y: x+y, norm_values) != 1:
-            print('numerical issue with {}'.format(column))
-        else:
-            sample = np.random.choice(keys, p=list(norm_values), size=nr)
-            sample_dict[column] = sample
-
-    sample_df = pd.DataFrame(sample_dict)
-    return sample_df
-
-
-def main():
-    #argument parsing
-    parser = argparse.ArgumentParser(description='Codon usage sample tool.')
-    parser.add_argument(
-        '-i', '--input', metavar='INPUTFILE', default="/dev/stdin",
-        help='The input file.'
-    )
-    parser.add_argument(
-        '-o', '--output', metavar='OUTPUTFILE', default="/dev/stdout",
-        help='The output file.'
-    )
-    parser.add_argument(
-        '-r', '--rows', metavar='int', type=int, const=10000, default=10000,  
-        nargs='?', help='Number of rows for model training.'
-    )
-    parser.add_argument(
-        '-t', '--threshold', metavar='float', type=float, const=0.9,
-         help='Threshold for value inclusion.',nargs='?', default=0.9
-    )
-    args = parser.parse_args()
-    
-    #defining global parameters according to the command line arguments
-    threshold = args.threshold
-    nr_rows = args.rows
-    inpath = args.input
-    outpath = args.output
-
-    #parse input
-    table = parse_table(inpath)
-    #print(table.index)
-    #build the distributions for the columns
-    #distributions = get_column_distribution(table, threshold)
-    distributions = get_codon_distribution(table)
-    
-    #filtered_rows = filter_rows(table, distributions)
-    #print(distributions.keys())
-    #print(distributions)
-    #create the table with the random samples for each column
-    #training_data = build_table(distributions, nr_rows)
-    #write the table as .tsv to the output file
-    #training_data.to_csv(outpath, sep='\t', index=False)
-
-if __name__ == "__main__":
-    main()
+'''
