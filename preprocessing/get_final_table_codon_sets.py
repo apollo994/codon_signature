@@ -42,9 +42,9 @@ def parse_table(inpath):
     return data
 
 
-def get_codon_distribution(data, outpath, species):
+def get_codon_distribution(data):
     
-    codon_df = pd.DataFrame
+    codon_distributions = {}
     
     synonymous_codons = {
         'CYS': ['TGT', 'TGC'],
@@ -73,6 +73,7 @@ def get_codon_distribution(data, outpath, species):
         'TYR': ['TAT', 'TAC']
         }
     
+    #Calculate the threshold to filter underrepresented values
     nr_assemblies = len(data.index)
     limit = np.floor_divide(nr_assemblies, 100) + 1
     #print(nr_assemblies)
@@ -81,6 +82,7 @@ def get_codon_distribution(data, outpath, species):
     #outfile = open('{}/{}_output.tsv'.format(outpath, species), 'w')
     #outfile.write('{}\n'.format(species))
     for amino_acid in synonymous_codons:
+        #print(amino_acid)
         codon_values = data[synonymous_codons[amino_acid]]
         #print(amino_acid)
         #print(codon_values)#
@@ -98,7 +100,7 @@ def get_codon_distribution(data, outpath, species):
         #sorted_freqs = sorted_freqs[sorted_freqs.Frequency <= limit]
         sorted_freqs.drop(sorted_freqs[sorted_freqs.Frequency <= limit].index, inplace=True)
         #new_total = sum(sorted_freqs['Frequency'].values)
-        print(sorted_freqs['Frequency'].values)
+        #print(sorted_freqs['Frequency'].values)
         #print(old_total)
         #print(new_total)
         #total = sum(sorted_freqs['Frequency'])
@@ -107,10 +109,17 @@ def get_codon_distribution(data, outpath, species):
         #total = sum(sorted_freqs['Frequency'])
         sorted_freqs['Frequency'] = sorted_freqs['Frequency'].divide(old_total)
         new_total = sum(sorted_freqs['Frequency'].values)
-        #print(new_total)
-        sorted_freqs['Frequency'] = sorted_freqs['Frequency'].divide(new_total)
-        print(sorted_freqs)
-        print(sum(sorted_freqs['Frequency'].values))
+        #print('New: ', new_total)
+        #Re-scale frequencies to sum up to 1 as it is a distribution
+        sorted_freqs['Frequency'] = [fractions.Fraction(x/new_total).limit_denominator() for x in sorted_freqs['Frequency']]
+        #sorted_freqs['Frequency'] = sorted_freqs['Frequency'].divide(new_total)
+        #print(sorted_freqs.index)
+        sorted_freqs.reset_index(drop=True, inplace=True)
+        codon_distributions[amino_acid] = sorted_freqs
+        
+        #print(sorted_freqs.sample(n=10, replace=True, weights=sorted_freqs['Frequency']))
+        #print(sorted_freqs.head())
+        #print(sum(sorted_freqs['Frequency'].values))
         #codon_df = pd.merge(codon_df, sorted_freqs)
         #print(sorted_freqs.head(1))
         #top_codons = sorted_freqs.head(1)['Frequency'].values[0].round(2)
@@ -126,11 +135,6 @@ def get_codon_distribution(data, outpath, species):
     
     #outfile.close()
 
-#    frequencies = data.groupby(['TAT','TAC']).size().reset_index(name='Frequency')
-#    sorted_freqs = frequencies.sort_values(by='Frequency', ascending=False)
-#    sorted_freqs['Frequency'] = sorted_freqs['Frequency'].divide(sum(sorted_freqs['Frequency']))
-#    print(sorted_freqs)
-#    
     #print(frequencies.sort_values(by='Frequency', ascending=False, inplace=True))
     #frequencies.divide()
     #print(frequencies)
@@ -143,7 +147,7 @@ def get_codon_distribution(data, outpath, species):
     #print(data[['ATG','CTG']].value_counts())
     
     
-    return None
+    return codon_distributions
 
 
 
@@ -159,27 +163,45 @@ def build_table(distributions, nr):
 #Output:
 #Pandas dataframe with the random values for each column
     
-    sample_dict = {}
-    #re-scaling to 1 (since it is supposed to be a distribution)
-    #Should be moved to get_column_distribution function
-    for column in distributions:
-        keys = list(distributions[column].keys())
-        values = list(distributions[column].values())
-        percent = reduce(lambda x,y: x+y, values)
-        #Fraction method must be used to avoid floating point issues that will
-        #cause the re-scaled values to not add up to 1
-        norm_values = [
-            fractions.Fraction(value/percent).limit_denominator()
-            for value in values
-        ]
-
-        if reduce(lambda x,y: x+y, norm_values) != 1:
-            print('numerical issue with {}'.format(column))
-        else:
-            sample = np.random.choice(keys, p=list(norm_values), size=nr)
-            sample_dict[column] = sample
-
-    sample_df = pd.DataFrame(sample_dict)
+    sample_df = pd.DataFrame({'init': range(0,nr)})
+    #sample_df = pd.DataFrame()
+    #print(sample_df)
+    for amino_acid in distributions:
+        #print(amino_acid)
+        #print(distributions[amino_acid])
+        codon_sample = distributions[amino_acid].sample(n=nr, replace=True, weights=distributions[amino_acid]['Frequency'])
+        codon_sample.drop('Frequency', axis=1, inplace=True)
+        codon_sample.reset_index(drop=True, inplace=True)
+        sample_df = sample_df.join(codon_sample)
+        
+        #for column in list(codon_sample):
+            #sample_df[column] = column
+        #print(sample_df)
+        #print(codon_sample)
+#    
+#    sample_dict = {}
+#    #re-scaling to 1 (since it is supposed to be a distribution)
+#    #Should be moved to get_column_distribution function
+#    for column in distributions:
+#        keys = list(distributions[column].keys())
+#        values = list(distributions[column].values())
+#        percent = reduce(lambda x,y: x+y, values)
+#        #Fraction method must be used to avoid floating point issues that will
+#        #cause the re-scaled values to not add up to 1
+#        norm_values = [
+#            fractions.Fraction(value/percent).limit_denominator()
+#            for value in values
+#        ]
+#
+#        if reduce(lambda x,y: x+y, norm_values) != 1:
+#            print('numerical issue with {}'.format(column))
+#        else:
+#            sample = np.random.choice(keys, p=list(norm_values), size=nr)
+#            sample_dict[column] = sample
+#
+#    sample_df = pd.DataFrame(sample_dict)
+    sample_df.drop('init', axis=1, inplace=True)
+    print(sample_df)
     return sample_df
 
 
@@ -198,28 +220,28 @@ def main():
         '-r', '--rows', metavar='int', type=int, const=10000, default=10000,  
         nargs='?', help='Number of rows for model training.'
     )
-    parser.add_argument(
-        '-t', '--threshold', metavar='float', type=float, const=0.9,
-         help='Threshold for value inclusion.',nargs='?', default=0.9
-    )
+#    parser.add_argument(
+#        '-t', '--threshold', metavar='float', type=float, const=0.9,
+#         help='Threshold for value inclusion.',nargs='?', default=0.9
+#    )
     args = parser.parse_args()
     
     #defining global parameters according to the command line arguments
-    threshold = args.threshold
+    #threshold = args.threshold
     nr_rows = args.rows
     inpath = args.input
     outpath = args.output
     
-    #taxa = glob.glob('{}/666*.tsv'.format(inpath))
-    #taxa = glob.glob('{}/*.tsv'.format(inpath))
-    #print(inpath)
-    #print(taxa)
-    #for taxon in taxa:
-    species = inpath.split('/')[-1].split('_')[0]
     table = parse_table(inpath)
-        #build the distributions for the columns
-        #distributions = get_column_distribution(table, threshold)
-    distributions = get_codon_distribution(table, outpath, species)
+    #build the distributions for the columns
+    distributions = get_codon_distribution(table)
+    #create the table with the random samples for each column
+    training_data = build_table(distributions, nr_rows)
+
+    #write the table as .tsv to the output file
+    training_data.to_csv(outpath, sep='\t', index=False)
+    
+    
         
     #filtered_rows = filter_rows(table, distributions)
     #print(distributions.keys())
