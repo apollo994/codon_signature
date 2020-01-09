@@ -1,18 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
+'''
 Created on Fri Dec 13 10:00:23 2019
 
 @author: andreas
-"""
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Dec 12 15:25:25 2019
-
-@author: andreas
-"""
+'''
 
 #Author: Andreas Blaumeiser, Joint Research Centre F7 Unit, Ispra (Italy)
 #Date: 2019-10-09
@@ -23,7 +15,7 @@ from collections import OrderedDict
 import fractions
 from functools import reduce
 import glob
-import math
+#import math
 import numpy as np
 import operator
 import pandas as pd
@@ -46,6 +38,7 @@ def parse_table(inpath):
     data.set_index('Assembly', inplace=True)
     #data.round(2, inplace=True)
     #print(data.columns)
+    #print(data)
     return data
 
 
@@ -54,30 +47,38 @@ def get_codon_distribution(data, outpath, species):
     codon_df = pd.DataFrame
     
     synonymous_codons = {
-        "CYS": ["TGT", "TGC"],
-        "ASP": ["GAT", "GAC"],
-        "SER": ["TCT", "TCG", "TCA", "TCC", "AGC", "AGT"],
-        "GLN": ["CAA", "CAG"],
-        "MET": ["ATG"],
-        "ASN": ["AAC", "AAT"],
-        "PRO": ["CCT", "CCG", "CCA", "CCC"],
-        "LYS": ["AAG", "AAA"],
-        "STOP": ["TAG", "TGA", "TAA"],
-        "THR": ["ACC", "ACA", "ACG", "ACT"],
-        "PHE": ["TTT", "TTC"],
-        "ALA": ["GCA", "GCC", "GCG", "GCT"],
-        "GLY": ["GGT", "GGG", "GGA", "GGC"],
-        "ILE": ["ATC", "ATA", "ATT"],
-        "LEU": ["TTA", "TTG", "CTC", "CTT", "CTG", "CTA"],
-        "HIS": ["CAT", "CAC"],
-        "ARG": ["CGA", "CGC", "CGG", "CGT", "AGG", "AGA"],
-        "TRP": ["TGG"],
-        "VAL": ["GTA", "GTC", "GTG", "GTT"],
-        "GLU": ["GAG", "GAA"],
-        "TYR": ["TAT", "TAC"]
+        'CYS': ['TGT', 'TGC'],
+        'ASP': ['GAT', 'GAC'],
+        'SER': ['TCT', 'TCG', 'TCA', 'TCC', 'AGC', 'AGT'],
+        'GLN': ['CAA', 'CAG'],
+        'MET': ['ATG'],
+        'ASN': ['AAC', 'AAT'],
+        'PRO': ['CCT', 'CCG', 'CCA', 'CCC'],
+        'LYS': ['AAG', 'AAA'],
+        'STOP': ['TAG', 'TGA', 'TAA'],
+        #'STOP': ['TAA'],
+        #'SEC': ['TGA'],
+        #'PYL': ['TAG'],
+        'THR': ['ACC', 'ACA', 'ACG', 'ACT'],
+        'PHE': ['TTT', 'TTC'],
+        'ALA': ['GCA', 'GCC', 'GCG', 'GCT'],
+        'GLY': ['GGT', 'GGG', 'GGA', 'GGC'],
+        'ILE': ['ATC', 'ATA', 'ATT'],
+        'LEU': ['TTA', 'TTG', 'CTC', 'CTT', 'CTG', 'CTA'],
+        'HIS': ['CAT', 'CAC'],
+        'ARG': ['CGA', 'CGC', 'CGG', 'CGT', 'AGG', 'AGA'],
+        'TRP': ['TGG'],
+        'VAL': ['GTA', 'GTC', 'GTG', 'GTT'],
+        'GLU': ['GAG', 'GAA'],
+        'TYR': ['TAT', 'TAC']
         }
     
-    outfile = open('{}/{}_output.tsv'.format(outpath, species), 'w')
+    nr_assemblies = len(data.index)
+    limit = np.floor_divide(nr_assemblies, 100) + 1
+    #print(nr_assemblies)
+    #print(limit)
+    
+    #outfile = open('{}/{}_output.tsv'.format(outpath, species), 'w')
     #outfile.write('{}\n'.format(species))
     for amino_acid in synonymous_codons:
         codon_values = data[synonymous_codons[amino_acid]]
@@ -87,22 +88,43 @@ def get_codon_distribution(data, outpath, species):
         frequencies = codon_values.groupby(synonymous_codons[amino_acid]).size().reset_index(name='Frequency')
         #Sort the codon sets according to their frequency
         sorted_freqs = frequencies.sort_values(by='Frequency', ascending=False)
+        old_total = sum(sorted_freqs['Frequency'])
+        #print(len(sorted_freqs.index))
+#        if len(sorted_freqs.index) == 16:
+#            print(sorted_freqs)
+#            sorted_freqs.drop(sorted_freqs[sorted_freqs.Frequency <= limit].index, inplace=True)
+#            print(sorted_freqs)
+        #Remove entries that occur less frequent than the limit
+        #sorted_freqs = sorted_freqs[sorted_freqs.Frequency <= limit]
+        sorted_freqs.drop(sorted_freqs[sorted_freqs.Frequency <= limit].index, inplace=True)
+        #new_total = sum(sorted_freqs['Frequency'].values)
+        print(sorted_freqs['Frequency'].values)
+        #print(old_total)
+        #print(new_total)
+        #total = sum(sorted_freqs['Frequency'])
+        #print(len(sorted_freqs.index))
         #Transform the absolute values into relative ones
-        sorted_freqs['Frequency'] = sorted_freqs['Frequency'].divide(sum(sorted_freqs['Frequency']))
-        #codon_df = pd.merge([codon_df, sorted_freqs])
+        #total = sum(sorted_freqs['Frequency'])
+        sorted_freqs['Frequency'] = sorted_freqs['Frequency'].divide(old_total)
+        new_total = sum(sorted_freqs['Frequency'].values)
+        #print(new_total)
+        sorted_freqs['Frequency'] = sorted_freqs['Frequency'].divide(new_total)
+        print(sorted_freqs)
+        print(sum(sorted_freqs['Frequency'].values))
+        #codon_df = pd.merge(codon_df, sorted_freqs)
         #print(sorted_freqs.head(1))
         #top_codons = sorted_freqs.head(1)['Frequency'].values[0].round(2)
-        top_codons = sorted_freqs.head(1)
+        #top_codons = sorted_freqs.head(1)
         #print(top_codons)
         #outfile.write('{}\t{}\n'.format(amino_acid, top_codons))
         #outfile.write()
-        outfile.write('{}\n'.format(amino_acid))
-        outfile.write(sorted_freqs.to_csv(sep='\t', index=False))
-        outfile.write('\n')
+        #outfile.write('{}\n'.format(amino_acid))
+        #outfile.write(sorted_freqs.to_csv(sep='\t', index=False))
+        #outfile.write('\n')
         #outfile.write(top_codons.to_csv(sep='\t', index=False))
         #outfile.write('{}\n'.format(sorted_freqs.head(1).to_string(index=False)))
     
-    outfile.close()
+    #outfile.close()
 
 #    frequencies = data.groupby(['TAT','TAC']).size().reset_index(name='Frequency')
 #    sorted_freqs = frequencies.sort_values(by='Frequency', ascending=False)
@@ -165,11 +187,11 @@ def main():
     #argument parsing
     parser = argparse.ArgumentParser(description='Codon usage sample tool.')
     parser.add_argument(
-        '-i', '--input', metavar='INPUTFILE', default="/dev/stdin",
+        '-i', '--input', metavar='INPUTFILE', default='/dev/stdin',
         help='The input file.'
     )
     parser.add_argument(
-        '-o', '--output', metavar='OUTPUTFILE', default="/dev/stdout",
+        '-o', '--output', metavar='OUTPUTFILE', default='/dev/stdout',
         help='The output file.'
     )
     parser.add_argument(
@@ -189,13 +211,15 @@ def main():
     outpath = args.output
     
     #taxa = glob.glob('{}/666*.tsv'.format(inpath))
-    taxa = glob.glob('{}/*.tsv'.format(inpath))
-    for taxon in taxa:
-        species = taxon.split('/')[-1].split('_')[0]
-        table = parse_table(taxon)
+    #taxa = glob.glob('{}/*.tsv'.format(inpath))
+    #print(inpath)
+    #print(taxa)
+    #for taxon in taxa:
+    species = inpath.split('/')[-1].split('_')[0]
+    table = parse_table(inpath)
         #build the distributions for the columns
         #distributions = get_column_distribution(table, threshold)
-        distributions = get_codon_distribution(table, outpath, species)
+    distributions = get_codon_distribution(table, outpath, species)
         
     #filtered_rows = filter_rows(table, distributions)
     #print(distributions.keys())
@@ -205,7 +229,7 @@ def main():
     #write the table as .tsv to the output file
     #training_data.to_csv(outpath, sep='\t', index=False)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
 
 
