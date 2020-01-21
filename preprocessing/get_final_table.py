@@ -1,18 +1,13 @@
 #Author: Andreas Blaumeiser, Joint Research Centre F7 Unit, Ispra (Italy)
-#Date: 2019-10-09
-#TODO: move re-scaling from build_table to get_column_distribution function
- 
+#Date: 2020-01-09
+
 import argparse
-from collections import OrderedDict
 import fractions
-from functools import reduce
-import math
 import numpy as np
-import operator
 import pandas as pd
 
 
-#parse_table
+def parse_table(inpath):
 #Reads in the data from the input file.
 #
 #Parameters:
@@ -20,124 +15,88 @@ import pandas as pd
 #
 #Output:
 #data from the input file transformed into a Pandas dataframe
-def parse_table(inpath):
-    data = pd.read_csv(inpath, sep='\t', index_col=False, low_memory=False)
+    
+    data = pd.read_csv(
+            inpath, sep='\t', index_col=False, low_memory=False
+            )
+    data = data.round(2)
+    data.drop('Taxid', axis=1, inplace=True)
+    data.set_index('Assembly', inplace=True)
     return data
 
 
-#get_column_distribution
-#Finds the most common values for each data column and constructs a
-#distribution.
-#
-#Parameters:
-#data: dataframe with all fraction values for the pairs of complementary codons
-#limit: the defined threshold of how much percentage of the column should be
-#       covered by the selected values
-#
-#Output:
-#dictionary with the most common values per column and the percentage of the
-#total column that these values cover
-def get_column_distribution(data, limit):
-    #the eventual output of the function
-    distributions = OrderedDict()
-    #find the distribution for each column
-    for column_name in data.columns:
-        #count the absolute frequencies
-        freqs = {}
-        column_values = data[column_name].values
-        for value in column_values:
-            try:
-                freqs[value] += 1
-            except:
-                freqs[value] = 1
-        #transform absolute freqs into relative freqs
-        total = reduce(lambda x,y: x+y, freqs.values())
-        freqs = {freq: freqs[freq]/total for freq in freqs}
-        #sort the values according to the frequencies to find the maxima
-        sorted_freqs = sorted(
-            freqs.items(), key=operator.itemgetter(1), reverse=True
-        )
-        #the highest percentage value
-        max_percent = sorted_freqs[0][1]
-        #find the list of all maxima
-        maxima = [tup[0] for tup in sorted_freqs if tup[1] == max_percent]
-        #add the values of the maxima to the column distribution
-        for mx in maxima:
-            try:
-                distributions[column_name][mx] = max_percent
-            except:
-                distributions[column_name] = {mx: max_percent}
-        #check if the maxima already cover more than the threshold because then
-        #no need to continue
-        percentage = len(maxima)*max_percent
-        if percentage >= limit:
-            continue
-        #if the maxima do not cover the limit, extend the range of values
-        else:
-            #set to check which values have already been added to avoid
-            #repeated considerations of values (all maxima belong to this
-            #set by default)
-            touched_values = set(maxima)
-            #dictionary to keep track of the extension around the maxima
-            #0: left neighbor, 1: right neighbor
-            maxima_dict = {
-                maxi: {0: maxi - 0.01, 1: maxi + 0.01} for maxi in maxima
-            }
+def get_codon_distributions(data, code):
+    
+    codon_distributions = {}
+    
+    synonymous_codons = {
+        'CYS': ['TGT', 'TGC'],
+        'ASP': ['GAT', 'GAC'],
+        'SER': ['TCT', 'TCG', 'TCA', 'TCC', 'AGC', 'AGT'],
+        'GLN': ['CAA', 'CAG'],
+        'MET': ['ATG'],
+        'ASN': ['AAC', 'AAT'],
+        'PRO': ['CCT', 'CCG', 'CCA', 'CCC'],
+        'LYS': ['AAG', 'AAA'],
+        'THR': ['ACC', 'ACA', 'ACG', 'ACT'],
+        'PHE': ['TTT', 'TTC'],
+        'ALA': ['GCA', 'GCC', 'GCG', 'GCT'],
+        'GLY': ['GGT', 'GGG', 'GGA', 'GGC'],
+        'ILE': ['ATC', 'ATA', 'ATT'],
+        'LEU': ['TTA', 'TTG', 'CTC', 'CTT', 'CTG', 'CTA'],
+        'HIS': ['CAT', 'CAC'],
+        'ARG': ['CGA', 'CGC', 'CGG', 'CGT', 'AGG', 'AGA'],
+        'TRP': ['TGG'],
+        'VAL': ['GTA', 'GTC', 'GTG', 'GTT'],
+        'GLU': ['GAG', 'GAA'],
+        'TYR': ['TAT', 'TAC']
+        }
+    
+    if code == 0:
+        synonymous_codons['STOP'] = ['TAG', 'TGA', 'TAA']
+    elif code == 1:
+        synonymous_codons['STOP'] = ['TAA']
+        synonymous_codons['SEC'] = ['TGA']
+        synonymous_codons['PYL'] = ['TAG']
+        
+    #Calculate the threshold to filter underrepresented values
+    nr_assemblies = len(data.index)
+    limit = np.floor_divide(nr_assemblies, 100) + 1
 
-            #auxiliary function to identify the next best value that should
-            #be added to the column's distribution
-            def find_next_value(ptg):
-                nbr_values = []
-                #go through neighbors of all maxima to find new best value
-                for maxi in maxima:
-                    left = maxima_dict[maxi][0]
-                    right = maxima_dict[maxi][1]
-
-                    if not left in touched_values and left in freqs:
-                        nbr_values.append(((maxi, 0), freqs[left]))
-                    if not right in touched_values and right in freqs:
-                        nbr_values.append(((maxi, 1), freqs[right]))
-
-                if nbr_values:
-                    next_step = (
-                        sorted(nbr_values, key=operator.itemgetter(1),
-                               reverse=True)
-                    )[0]
-                    next_value = maxima_dict[next_step[0][0]][next_step[0][1]]
-                    next_max = next_step[1]
-                    #update list of touched values
-                    touched_values.add(next_value)
-                    #update maxima_dict
-                    curr_max = next_step[0][0]
-                    nbr = next_step[0][1]
-                    #values need to be rounded to avoid floating point issues,
-                    #e.g. 0.81+0.01=0.8200000000000001 in vanilla Python
-                    if nbr == 0:
-                        new_left = round(maxima_dict[curr_max][0] - 0.01, 2)
-                        maxima_dict[curr_max][0] = new_left
-                    elif nbr == 1:
-                        new_right = round(maxima_dict[curr_max][1] + 0.01, 2)
-                        maxima_dict[curr_max][1] = new_right
-                    return (next_value, next_max)
-                else:
-                    return False
-
-            #if the limit has not been reached yet, more values can be added
-            #to the distribution by calling the find_next_value function
-            while percentage < limit:
-                next_step = find_next_value(percentage)
-                if next_step:
-                    distributions[column_name][next_step[0]] = next_step[1]
-                    percentage = math.fsum([percentage, next_step[1]])
-                #limit cannot be reached because the next step reached only
-                #zeros (or went out of boundaries - <0 or >1), stop extension
-                else:
-                    break
-                
-    return distributions
+    for amino_acid in synonymous_codons:
+        #Extract the values for all codons that code for the amino acid
+        codon_values = data[synonymous_codons[amino_acid]]
+        #Count the absolute frequencies of all combinations of codon values
+        frequencies = (
+                codon_values.groupby(
+                        synonymous_codons[amino_acid]).size().
+                        reset_index(name='Frequency'
+                                    )
+                        )
+        #Sort the codon sets according to their frequency
+        sorted_freqs = frequencies.sort_values(by='Frequency', ascending=False)
+        #Total number required to change absolute into realative frequencies
+        old_total = sum(sorted_freqs['Frequency'])
+        #Remove entries that occur less frequent than the limit
+        sorted_freqs.drop(
+                sorted_freqs[sorted_freqs.Frequency <= limit].index,
+                inplace=True
+                )
+        #Transform the absolute values into relative ones
+        sorted_freqs['Frequency'] = sorted_freqs['Frequency'].divide(old_total)
+        new_total = sum(sorted_freqs['Frequency'].values)
+        #Re-scale frequencies to sum up to 1 as it is a distribution
+        sorted_freqs['Frequency'] = [
+                fractions.Fraction(x/new_total).limit_denominator()
+                for x in sorted_freqs['Frequency']
+                ]
+        sorted_freqs.reset_index(drop=True, inplace=True)
+        codon_distributions[amino_acid] = sorted_freqs
+    
+    return codon_distributions
 
 
-#build_table
+def build_table(distributions, nr):
 #Creates a table of values for each pair of codons column picked randomly
 #with a distribution according to all values in the column.
 #
@@ -147,66 +106,62 @@ def get_column_distribution(data, limit):
 #
 #Output:
 #Pandas dataframe with the random values for each column
-def build_table(distributions, nr):
-    sample_dict = {}
-    #re-scaling to 1 (since it is supposed to be a distribution)
-    #Should be moved to get_column_distribution function
-    for column in distributions:
-        keys = list(distributions[column].keys())
-        values = list(distributions[column].values())
-        percent = reduce(lambda x,y: x+y, values)
-        #Fraction method must be used to avoid floating point issues that will
-        #cause the re-scaled values to not add up to 1
-        norm_values = [
-            fractions.Fraction(value/percent).limit_denominator()
-            for value in values
-        ]
+    
+    sample_df = pd.DataFrame({'init': range(0,nr)})
 
-        if reduce(lambda x,y: x+y, norm_values) != 1:
-            print('numerical issue with {}'.format(column))
-        else:
-            sample = np.random.choice(keys, p=list(norm_values), size=nr)
-            sample_dict[column] = sample
+    for amino_acid in distributions:
+        codon_sample = (
+                distributions[amino_acid]
+                .sample(
+                        n=nr, replace=True, 
+                        weights=distributions[amino_acid]['Frequency']
+                        )
+                )
+        codon_sample.drop('Frequency', axis=1, inplace=True)
+        codon_sample.reset_index(drop=True, inplace=True)
+        sample_df = sample_df.join(codon_sample)
 
-    sample_df = pd.DataFrame(sample_dict)
+    sample_df.drop('init', axis=1, inplace=True)
     return sample_df
 
 
 def main():
-    #argument parsing
+    #Argument parsing
     parser = argparse.ArgumentParser(description='Codon usage sample tool.')
     parser.add_argument(
-        '-i', '--input', metavar='INPUTFILE', default="/dev/stdin",
+        '-i', '--input', metavar='INPUTFILE', default='/dev/stdin',
         help='The input file.'
     )
     parser.add_argument(
-        '-o', '--output', metavar='OUTPUTFILE', default="/dev/stdout",
+        '-o', '--output', metavar='OUTPUTFILE', default='/dev/stdout',
         help='The output file.'
     )
     parser.add_argument(
-        '-r', '--rows', metavar='int', type=int, const=10000, default=10000,  
+        '-r', '--rows', metavar='int', type=int, const=10000, default=10000,
         nargs='?', help='Number of rows for model training.'
     )
     parser.add_argument(
-        '-t', '--threshold', metavar='float', type=float, const=0.9,
-         help='Threshold for value inclusion.',nargs='?', default=0.9
+        '-c', '--code', metavar='int', type=int, const=0, default=0, nargs='?',
+        help='Genetic code for twenty (0) or twenty-two (1) amino acids.'
     )
+
     args = parser.parse_args()
     
-    #defining global parameters according to the command line arguments
-    threshold = args.threshold
+    #Definition of global parameters according to the command line arguments
     nr_rows = args.rows
     inpath = args.input
     outpath = args.output
+    code = args.code
 
-    #parse input
+    #Read in data from input file
     table = parse_table(inpath)
-    #build the distributions for the columns
-    distributions = get_column_distribution(table, threshold)
-    #create the table with the random samples for each column
+    #Build the distributions for the columns
+    distributions = get_codon_distributions(table, code)
+    #Create the table with the random samples for each column
     training_data = build_table(distributions, nr_rows)
-    #write the table as .tsv to the output file
+    #Write the table as .tsv to the output file
     training_data.to_csv(outpath, sep='\t', index=False)
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     main()
