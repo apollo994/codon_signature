@@ -4,7 +4,7 @@ Microorganism identification could be misleading or slow with traditional method
 
 This repository contains the scratch of a pipeline for alternative classification using codon usage patterns.
 
-Here you will find a pipeline to generate codon usage signature tables to train an ML model, starting from codon abbundance in CDS.
+Here you will find a pipeline to generate codon usage signature tables to train an ML model, starting from codon abundance in CDS.
 
 
 ## How to run the pipeline
@@ -24,4 +24,4 @@ Where `RefSeq_table` is a table containing the following columns (tab-separated)
 
 `Taxon_IDs_list` is a .txt file that contains one **Taxid** per line and represents the list of species you want to generate the final codon signature table for (one for each Taxid)
 
-`run_name` is the name used to name the folder containig as many file as Taxids you asked for, each of them representing the codon signature of each species.
+`run_name` is the name used to name the folder containing as many files as Taxids you asked for, each of them representing the codon signature of each species.
